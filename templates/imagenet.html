@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}ImageNet Classification - CNN Playground{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/imagenet.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="page-header">
+        <h1>ImageNet Classification</h1>
+        <p>Upload an image to classify it using state-of-the-art neural networks</p>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section fade-in" id="uploadSection">
+        <h3>Upload Image</h3>
+        <p>Drag and drop an image here, or click to select</p>
+        <p><small>Supported formats: JPG, PNG (max 10MB)</small></p>
+        <input type="file" id="fileInput" accept="image/*">
+        <br><br>
+        <button class="btn upload-button" type="button" onclick="document.getElementById('fileInput').click()">
+            Choose Image
+        </button>
+    </div>
+
+    <!-- Model Selection -->
+    <div class="model-selection fade-in">
+        <label for="modelSelect">Neural Network Architecture</label>
+        <select id="modelSelect">
+            <option value="resnet50">ResNet-50 (Recommended)</option>
+            <option value="vgg16">VGG-16</option>
+            <option value="efficientnet">EfficientNet</option>
+        </select>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Analyzing image with neural network...</p>
+        <p><small>This may take a few seconds</small></p>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+        <div class="results-header">
+            <h2>Analysis Results</h2>
+        </div>
+
+        <div class="uploaded-image" id="uploadedImageContainer"></div>
+
+        <div class="analysis-grid">
+            <div class="analysis-panel">
+                <h3>Top 5 Predictions</h3>
+                <div id="predictions"></div>
+            </div>
+
+            <div class="analysis-panel gradcam-panel">
+                <h3>Attention Map (Grad-CAM)</h3>
+                <div id="gradcamContainer">
+                    <div class="gradcam-placeholder">
+                        <p>Grad-CAM visualization will appear here</p>
+                        <p><small>Shows where the network focuses attention</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layer Progression -->
+        <div class="layer-progression fade-in" id="layerProgression" style="display: none;">
+            <h3>CNN Layer Analysis</h3>
+            <div class="layer-tabs">
+                <button class="layer-tab active" data-layer="overview">Overview</button>
+                <button class="layer-tab" data-layer="conv1">Conv1</button>
+                <button class="layer-tab" data-layer="conv2_1">Conv2_1</button>
+                <button class="layer-tab" data-layer="conv3_1">Conv3_1</button>
+                <button class="layer-tab" data-layer="conv4_1">Conv4_1</button>
+                <button class="layer-tab" data-layer="conv5_1">Conv5_1</button>
+            </div>
+
+            <div class="layer-content" id="layerContent">
+                <div class="layer-placeholder">
+                    <p>Select a layer above to see feature maps</p>
+                </div>
+            </div>
+
+            <div class="layer-info" id="layerInfo">
+                <h4>Layer Information</h4>
+                <p id="layerDescription">Choose a layer to see analysis</p>
+            </div>
+        </div>
+
+        <!-- Feature Maps Info -->
+        <div class="feature-maps fade-in">
+            <h3>Neural Network Information</h3>
+            <div id="featureMaps">
+                <p>Network details and processing information will appear here</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/imagenet.js"></script>
+<script>
+    // Initialize ImageNet functionality
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set active nav tab
+        window.CNNPlayground.setActiveNavTab('imagenet');
+        
+        // Initialize ImageNet classifier
+        const imagenetClassifier = new ImageNetClassifier();
+        
+        console.log('ImageNet page initialized');
+    });
+</script>
+{% endblock %}

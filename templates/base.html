@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CNN Playground{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">
+            <a href="/">CNN Playground</a>
+        </div>
+        <div class="nav-center">
+            <!-- base.html -->
+            <div class="nav-tabs">
+                <a href="/imagenet" class="nav-tab">ImageNet</a>
+                <a href="/mnist" class="nav-tab">MNIST</a>
+                <a href="/vision" class="nav-tab">Computer Vision</a>
+            </div>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+</nav>
+
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="/static/js/main.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

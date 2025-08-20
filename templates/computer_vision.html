@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Computer Vision Analysis - CNN Playground{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/computer_vision.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="page-header">
+        <h1>Computer Vision Analysis</h1>
+        <p>Advanced object detection, segmentation, and real-time processing using state-of-the-art neural networks</p>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="main-tabs">
+        <button class="main-tab active" data-tab="image">
+            <div class="tab-icon">IMAGE</div>
+            <div class="tab-content">
+                <div class="tab-title">Image Analysis</div>
+                <div class="tab-description">Static image processing</div>
+            </div>
+        </button>
+        <button class="main-tab" data-tab="video">
+            <div class="tab-icon">VIDEO</div>
+            <div class="tab-content">
+                <div class="tab-title">Video Processing</div>
+                <div class="tab-description">Frame-by-frame analysis</div>
+            </div>
+        </button>
+        <button class="main-tab" data-tab="live">
+            <div class="tab-icon">LIVE</div>
+            <div class="tab-content">
+                <div class="tab-title">Live Camera</div>
+                <div class="tab-description">Real-time detection</div>
+            </div>
+        </button>
+    </div>
+
+    <!-- Image Analysis Panel -->
+    <div class="tab-panel active" id="image-panel">
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <h3>Upload Image for Analysis</h3>
+            <p>Drag and drop an image or click to select from your device</p>
+            <p class="upload-specs">Supported formats: JPG, PNG, WebP (max 10MB)</p>
+            <input type="file" id="fileInput" accept="image/*">
+            <button class="upload-button">Choose Image</button>
+        </div>
+
+        <!-- Model Configuration -->
+        <div class="model-configuration">
+            <h3>Model Configuration</h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="detectionModel">Detection Model</label>
+                    <select id="detectionModel">
+                        <option value="yolo11n">YOLO11-Nano (Fast)</option>
+                        <option value="yolo11s">YOLO11-Small</option>
+                        <option value="yolo11m" selected>YOLO11-Medium (Recommended)</option>
+                        <option value="yolo11l">YOLO11-Large</option>
+                        <option value="yolo11x">YOLO11-XLarge (Accurate)</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="segmentationModel">Segmentation Model</label>
+                    <select id="segmentationModel">
+                        <option value="yolo11n-seg">YOLO11-Nano Segmentation</option>
+                        <option value="yolo11s-seg">YOLO11-Small Segmentation</option>
+                        <option value="yolo11m-seg" selected>YOLO11-Medium Segmentation</option>
+                        <option value="yolo11l-seg">YOLO11-Large Segmentation</option>
+                        <option value="sam2_b">SAM 2.1 Base (Universal)</option>
+                        <option value="sam2_l">SAM 2.1 Large (Best Quality)</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="confidenceThreshold">
+                        Confidence Threshold: <span id="confidenceValue">0.5</span>
+                    </label>
+                    <input type="range" id="confidenceThreshold" min="0.1" max="0.9" step="0.05" value="0.5">
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Container -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressText">Initializing analysis...</div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing image with neural networks...</p>
+            <p>Performing detection and segmentation analysis</p>
+        </div>
+
+        <!-- Results Display -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <h2>Analysis Results</h2>
+            </div>
+
+            <!-- Analysis Grid - 3 Panel Layout -->
+            <div class="analysis-grid">
+                <div class="analysis-panel">
+                    <h3>Original Image</h3>
+                    <div class="image-container" id="originalImageContainer">
+                        <div class="image-placeholder">
+                            <p>Original image will appear here</p>
+                            <small>Click on any image to view full size</small>
+                        </div>
+                    </div>
+                    <div class="panel-info" id="originalImageInfo">
+                        <p>Upload an image to begin analysis</p>
+                    </div>
+                </div>
+
+                <div class="analysis-panel">
+                    <h3>Object Detection</h3>
+                    <div class="image-container" id="detectionImageContainer">
+                        <div class="image-placeholder">
+                            <p>Detection results will appear here</p>
+                            <small>Bounding boxes around detected objects</small>
+                        </div>
+                    </div>
+                    <div class="panel-info">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-value" id="detectedObjectsCount">0</span>
+                                <span class="stat-label">Objects</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="detectionTime">0ms</span>
+                                <span class="stat-label">Time</span>
+                            </div>
+                        </div>
+                        <div class="detected-objects-list" id="detectedObjectsList">
+                            <p>No objects detected yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-panel">
+                    <h3>Instance Segmentation</h3>
+                    <div class="image-container" id="segmentationImageContainer">
+                        <div class="image-placeholder">
+                            <p>Segmentation results will appear here</p>
+                            <small>Pixel-level object boundaries</small>
+                        </div>
+                    </div>
+                    <div class="panel-info">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-value" id="segmentedRegionsCount">0</span>
+                                <span class="stat-label">Regions</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="segmentationTime">0ms</span>
+                                <span class="stat-label">Time</span>
+                            </div>
+                        </div>
+                        <div class="segmentation-classes-list" id="segmentationClassesList">
+                            <p>No segments identified yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis Section -->
+            <div class="detailed-analysis">
+                <h3>Detailed Analysis</h3>
+                <div class="analysis-tabs">
+                    <button class="analysis-tab active" data-tab="summary">Summary</button>
+                    <button class="analysis-tab" data-tab="detection-details">Detection Details</button>
+                    <button class="analysis-tab" data-tab="segmentation-details">Segmentation Details</button>
+                    <button class="analysis-tab" data-tab="model-info">Model Information</button>
+                </div>
+
+                <div class="analysis-content">
+                    <div class="tab-content active" id="summary-content">
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <h4>Performance Summary</h4>
+                                <div id="performanceSummary">
+                                    <p>Process an image to see performance metrics</p>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Detection Summary</h4>
+                                <div id="detectionSummary">
+                                    <p>Object detection results will appear here</p>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Segmentation Summary</h4>
+                                <div id="segmentationSummary">
+                                    <p>Segmentation analysis will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="detection-details-content">
+                        <div class="details-table" id="detectionDetailsTable">
+                            <p>Upload and analyze an image to see detailed detection results</p>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="segmentation-details-content">
+                        <div class="details-table" id="segmentationDetailsTable">
+                            <p>Upload and analyze an image to see detailed segmentation results</p>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="model-info-content">
+                        <div class="model-info-grid">
+                            <div class="model-card">
+                                <h4>Detection Model</h4>
+                                <div id="detectionModelInfo">
+                                    <p>Model information will be displayed after analysis</p>
+                                </div>
+                            </div>
+                            <div class="model-card">
+                                <h4>Segmentation Model</h4>
+                                <div id="segmentationModelInfo">
+                                    <p>Model information will be displayed after analysis</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Processing Panel -->
+    <div class="tab-panel" id="video-panel">
+        <div class="upload-section">
+            <h3>Upload Video for Processing</h3>
+            <p>Drag and drop a video file or click to select from your device</p>
+            <p class="upload-specs">Supported formats: MP4, AVI, MOV, WebM (max 100MB)</p>
+            <input type="file" id="videoInput" accept="video/*">
+            <button class="upload-button">Choose Video</button>
+        </div>
+
+        <div class="model-configuration">
+            <h3>Video Processing Configuration</h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="videoDetectionModel">Detection Model</label>
+                    <select id="videoDetectionModel">
+                        <option value="yolo11n" selected>YOLO11-Nano (Fastest)</option>
+                        <option value="yolo11s">YOLO11-Small</option>
+                        <option value="yolo11m">YOLO11-Medium</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="frameSkip">Frame Processing</label>
+                    <select id="frameSkip">
+                        <option value="1">Every Frame (Slow, High Quality)</option>
+                        <option value="2" selected>Every 2nd Frame (Balanced)</option>
+                        <option value="3">Every 3rd Frame</option>
+                        <option value="5">Every 5th Frame (Fast, Lower Quality)</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="videoConfidence">
+                        Confidence Threshold: <span id="videoConfidenceValue">0.4</span>
+                    </label>
+                    <input type="range" id="videoConfidence" min="0.1" max="0.9" step="0.05" value="0.4">
+                </div>
+            </div>
+        </div>
+
+        <div class="video-controls">
+            <button class="btn btn-primary" id="processVideoBtn">Process Video</button>
+            <button class="btn btn-success" id="downloadVideoBtn" style="display:none;">Download Result</button>
+            <button class="btn btn-danger" id="cancelVideoBtn" style="display:none;">Cancel Processing</button>
+        </div>
+
+        <div class="video-progress" id="videoProgress" style="display:none;">
+            <div class="progress-header">
+                <h4>Processing Video...</h4>
+                <span class="progress-percentage" id="videoProgressPercentage">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="videoProgressBar"></div>
+            </div>
+            <div class="progress-details">
+                <span id="videoProgressText">Initializing video processing...</span>
+                <span id="videoProgressStats">Frame 0 of 0</span>
+            </div>
+        </div>
+
+        <div class="video-results" id="videoResults" style="display:none;">
+            <div class="video-comparison">
+                <div class="video-container">
+                    <h4>Original Video</h4>
+                    <video id="originalVideo" controls style="width: 100%; max-width: 400px;"></video>
+                </div>
+                <div class="video-container">
+                    <h4>Processed Video</h4>
+                    <video id="processedVideo" controls style="width: 100%; max-width: 400px;"></video>
+                </div>
+            </div>
+            <div class="video-stats" id="videoStats"></div>
+        </div>
+    </div>
+
+    <!-- Live Camera Panel -->
+    <div class="tab-panel" id="live-panel">
+        <div class="model-configuration">
+            <h3>Live Camera Configuration</h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="liveDetectionModel">Detection Model</label>
+                    <select id="liveDetectionModel">
+                        <option value="yolo11n" selected>YOLO11-Nano (Real-time)</option>
+                        <option value="yolo11s">YOLO11-Small</option>
+                        <option value="yolo11m">YOLO11-Medium</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="liveConfidence">
+                        Confidence Threshold: <span id="liveConfidenceValue">0.3</span>
+                    </label>
+                    <input type="range" id="liveConfidence" min="0.1" max="0.9" step="0.05" value="0.3">
+                </div>
+                <div class="config-item">
+                    <label for="processingFps">Processing Rate</label>
+                    <select id="processingFps">
+                        <option value="2">2 FPS (Battery Saving)</option>
+                        <option value="3" selected>3 FPS (Balanced)</option>
+                        <option value="5">5 FPS (Smooth)</option>
+                        <option value="10">10 FPS (High Performance)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="live-controls">
+            <button class="btn btn-primary" id="startCameraBtn">Start Camera</button>
+            <button class="btn btn-danger" id="stopCameraBtn" style="display:none;">Stop Camera</button>
+            <button class="btn" id="captureFrameBtn" style="display:none;">Capture Frame</button>
+            <button class="btn" id="toggleDetectionBtn" style="display:none;">Pause Detection</button>
+        </div>
+
+        <div class="camera-container">
+            <div class="camera-display">
+                <video id="liveVideo" autoplay muted style="display:none;"></video>
+                <canvas id="liveCanvas" style="display:none;"></canvas>
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <div class="placeholder-icon">CAMERA</div>
+                    <h4>Camera Ready</h4>
+                    <p>Click "Start Camera" to begin real-time object detection</p>
+                    <small>Your browser will request camera permission</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="live-stats" id="liveStats" style="display:none;">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-value" id="liveObjectCount">0</span>
+                    <span class="stat-label">Objects Detected</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="liveFps">0</span>
+                    <span class="stat-label">Processing FPS</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="liveLatency">0ms</span>
+                    <span class="stat-label">Average Latency</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="liveUptime">00:00</span>
+                    <span class="stat-label">Session Time</span>
+                </div>
+            </div>
+
+            <div class="live-detection-log" id="liveDetectionLog">
+                <h4>Recent Detections</h4>
+                <div class="detection-log-list" id="detectionLogList">
+                    <p>Start camera to see live detection results</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/computer_vision.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set active navigation tab
+        if (window.CNNPlayground && window.CNNPlayground.setActiveNavTab) {
+            window.CNNPlayground.setActiveNavTab('vision');
+        }
+
+        // Initialize Computer Vision Analyzer
+        const computerVisionAnalyzer = new ComputerVisionAnalyzer();
+
+        console.log('Computer Vision page initialized');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+2025-08-08 00:08:54,626 - app.main - INFO - Application directories created successfully
+2025-08-08 00:08:54,637 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:08:54,638 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:08:54,638 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 00:09:56,774 - app.main - INFO - Saved uploaded file: 20250808_000956_city.jpg
+2025-08-08 00:10:05,020 - app.main - ERROR - Analysis failed: module 'PIL.ImageFile' has no attribute '_Tile'
+2025-08-08 00:10:05,020 - app.main - ERROR - Error processing upload: 
+2025-08-08 00:10:34,593 - app.main - INFO - Saved uploaded file: 20250808_001034_test2.jpg
+2025-08-08 00:10:35,019 - app.main - ERROR - Analysis failed: module 'PIL.ImageFile' has no attribute '_Tile'
+2025-08-08 00:10:35,019 - app.main - ERROR - Error processing upload: 
+2025-08-08 00:10:41,748 - app.main - INFO - CNN Playground shutting down...
+2025-08-08 00:11:21,259 - app.main - INFO - Application directories created successfully
+2025-08-08 00:11:21,270 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:11:21,271 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:11:21,271 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 00:11:35,405 - app.main - INFO - Saved uploaded file: 20250808_001135_city.jpg
+2025-08-08 00:11:46,712 - app.main - INFO - Analysis completed successfully for 20250808_001135_city.jpg
+2025-08-08 00:12:12,113 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:12,113 - app.models.mnist_classifier - INFO - Initializing MNIST classifier on cpu
+2025-08-08 00:12:12,133 - app.models.mnist_classifier - INFO - Found pre-trained model at: D:\PycharmProjects\cnn-playground\app\models\saved_models\mnist_model.pth
+2025-08-08 00:12:12,133 - app.models.mnist_classifier - INFO - Loading pre-trained model from: D:\PycharmProjects\cnn-playground\app\models\saved_models\mnist_model.pth
+2025-08-08 00:12:12,186 - app.models.mnist_classifier - INFO -    Architecture: Improved LeNet-5
+2025-08-08 00:12:12,186 - app.models.mnist_classifier - INFO -    Test Accuracy: 99.53
+2025-08-08 00:12:12,186 - app.models.mnist_classifier - INFO -    Training Date: 2025-07-30 00:59:30
+2025-08-08 00:12:12,187 - app.models.mnist_classifier - INFO - MNIST classifier initialized successfully
+2025-08-08 00:12:12,270 - app.models.mnist_classifier - INFO - Predicted digit: 7 with confidence: 0.602
+2025-08-08 00:12:12,270 - app.main - INFO - MNIST prediction: digit 7 (confidence: 0.602)
+2025-08-08 00:12:18,231 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:18,237 - app.models.mnist_classifier - WARNING - Image is mostly white - may be empty
+2025-08-08 00:12:18,242 - app.models.mnist_classifier - INFO - Predicted digit: 1 with confidence: 0.998
+2025-08-08 00:12:18,242 - app.main - INFO - MNIST prediction: digit 1 (confidence: 0.998)
+2025-08-08 00:12:21,599 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:21,659 - app.models.mnist_classifier - INFO - Predicted digit: 1 with confidence: 0.931
+2025-08-08 00:12:21,659 - app.main - INFO - MNIST prediction: digit 1 (confidence: 0.931)
+2025-08-08 00:12:28,297 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:28,305 - app.models.mnist_classifier - INFO - Predicted digit: 1 with confidence: 0.497
+2025-08-08 00:12:28,305 - app.main - INFO - MNIST prediction: digit 1 (confidence: 0.497)
+2025-08-08 00:12:31,141 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:31,149 - app.models.mnist_classifier - INFO - Predicted digit: 4 with confidence: 0.876
+2025-08-08 00:12:31,149 - app.main - INFO - MNIST prediction: digit 4 (confidence: 0.876)
+2025-08-08 00:12:33,182 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:33,190 - app.models.mnist_classifier - INFO - Predicted digit: 4 with confidence: 0.995
+2025-08-08 00:12:33,191 - app.main - INFO - MNIST prediction: digit 4 (confidence: 0.995)
+2025-08-08 00:12:37,674 - app.main - INFO - Processing MNIST prediction request
+2025-08-08 00:12:37,682 - app.models.mnist_classifier - INFO - Predicted digit: 1 with confidence: 0.588
+2025-08-08 00:12:37,682 - app.main - INFO - MNIST prediction: digit 1 (confidence: 0.588)
+2025-08-08 00:18:39,366 - app.main - INFO - Application directories created successfully
+2025-08-08 00:18:39,376 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:18:39,378 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:18:39,378 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 00:25:34,180 - app.main - INFO - Application directories created successfully
+2025-08-08 00:25:34,191 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:25:34,192 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:25:34,192 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 00:41:43,320 - app.main - INFO - Application directories created successfully
+2025-08-08 00:41:43,331 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:41:43,331 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:41:43,331 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 00:52:12,116 - app.main - INFO - Application directories created successfully
+2025-08-08 00:52:12,127 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:52:12,128 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:52:12,128 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 00:52:18,003 - app.main - INFO - Processing vision analysis: 20250808_005218_barbie.jpg, Detection: yolo11m, Segmentation: yolo11m-seg
+2025-08-08 00:52:18,003 - app.main - WARNING - Enhanced vision analyzer not available: No module named 'models'
+2025-08-08 00:54:12,399 - app.main - INFO - CNN Playground shutting down...
+2025-08-08 00:54:15,009 - app.main - INFO - Application directories created successfully
+2025-08-08 00:54:15,020 - app.main - INFO - CNN Playground with Enhanced Computer Vision starting up...
+2025-08-08 00:54:15,021 - app.main - WARNING - Vision analyzer not available - running in demo mode
+2025-08-08 00:54:15,021 - app.main - INFO - Enhanced Computer Vision startup completed
+2025-08-08 01:00:36,375 - app.main - INFO - CNN Playground shutting down...

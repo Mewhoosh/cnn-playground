@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}MNIST Playground - CNN Playground{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/mnist.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="page-header">
+        <h1>MNIST Playground</h1>
+        <p>Draw digits and see neural network recognition in real-time</p>
+    </div>
+
+    <!-- Main MNIST Section -->
+    <div class="mnist-section fade-in">
+        <div class="mnist-grid">
+            <!-- Drawing Panel -->
+            <div class="drawing-panel">
+                <h2>Draw a Digit (0-9)</h2>
+
+                <div class="canvas-container">
+                    <canvas id="drawingCanvas" width="280" height="280"></canvas>
+                    <div class="canvas-overlay" id="canvasOverlay">
+                        <div>Draw a digit here</div>
+                        <div>Use mouse or touch</div>
+                    </div>
+                </div>
+
+                <div class="brush-controls">
+                    <div class="brush-control">
+                        <label for="brushSize">Brush Size:</label>
+                        <input type="range" id="brushSize" min="5" max="30" value="15">
+                        <div class="brush-preview" id="brushPreview"></div>
+                    </div>
+                </div>
+
+                <div class="canvas-controls">
+                    <button class="btn" id="predictBtn">Predict</button>
+                    <button class="btn btn-danger" id="clearBtn">Clear</button>
+                    <button class="btn" id="eraseBtn" title="Switch to erase mode">Erase</button>
+                </div>
+
+                <div class="drawing-tips">
+                    <h3>Drawing Tips</h3>
+                    <ul>
+                        <li>Draw digits centered in the canvas</li>
+                        <li>Use thick strokes for better recognition</li>
+                        <li>Fill most of the canvas space</li>
+                        <li>Clear handwriting works best</li>
+                        <li>Use erase to fix mistakes locally</li>
+                        <li>Predictions update automatically</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Predictions Panel -->
+            <div class="predictions-panel">
+                <h2>Neural Network Prediction</h2>
+
+                <div class="prediction-result">
+                    <div class="predicted-digit" id="predictedDigit">?</div>
+                    <div class="confidence-score" id="confidenceScore">Draw a digit to see prediction</div>
+                    <div class="status-indicator status-unclear" id="statusIndicator">Waiting for input</div>
+                </div>
+
+                <div class="confidence-section">
+                    <h3>Confidence for Each Digit</h3>
+                    <div id="confidenceBars">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="processed-image-section" id="processedImageContainer" style="display: none;">
+                    <h3>Processed Input</h3>
+                    <img id="processedImage" alt="Processed digit">
+                    <p>How the neural network sees your drawing</p>
+                </div>
+
+                <div class="model-info">
+                    <h3>Model Information</h3>
+                    <div id="modelDetails">
+                        <p><strong>Architecture:</strong> LeNet-5</p>
+                        <p><strong>Layers:</strong> 2 Conv + 3 Dense</p>
+                        <p><strong>Parameters:</strong> ~62K trainable</p>
+                        <p><strong>Input:</strong> 28×28 grayscale</p>
+                        <p><strong>Dataset:</strong> MNIST digits</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div class="info-section fade-in">
+        <h2>How It Works</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-icon">🎨</div>
+                <h4>1. Draw Your Digit</h4>
+                <p>Use the canvas to draw any digit from 0-9. Switch to erase mode to fix mistakes locally without starting over.</p>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">🔄</div>
+                <h4>2. Image Preprocessing</h4>
+                <p>Your drawing is converted to 28×28 grayscale, inverted, and normalized to match MNIST training data.</p>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">🧠</div>
+                <h4>3. Neural Network</h4>
+                <p>A LeNet-5 CNN processes the image through convolutional and dense layers to classify the digit.</p>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">📊</div>
+                <h4>4. Confidence Scores</h4>
+                <p>See prediction confidence for all 10 digits, helping you understand the model's decision process.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Details Section -->
+    <div class="technical-section fade-in">
+        <h2>Technical Details</h2>
+        <div class="technical-grid">
+            <div class="technical-item">
+                <h4>Neural Network Architecture</h4>
+                <ul>
+                    <li><strong>Conv Layer 1:</strong> 6 filters, 5×5 kernel</li>
+                    <li><strong>Conv Layer 2:</strong> 16 filters, 5×5 kernel</li>
+                    <li><strong>Dense Layer 1:</strong> 120 neurons</li>
+                    <li><strong>Dense Layer 2:</strong> 84 neurons</li>
+                    <li><strong>Output Layer:</strong> 10 classes (digits 0-9)</li>
+                </ul>
+            </div>
+            <div class="technical-item">
+                <h4>Data Processing Pipeline</h4>
+                <ul>
+                    <li><strong>Input:</strong> Canvas drawing (280×280)</li>
+                    <li><strong>Resize:</strong> Scale to 28×28 pixels</li>
+                    <li><strong>Invert:</strong> White background → Black</li>
+                    <li><strong>Normalize:</strong> MNIST statistics (μ=0.1307, σ=0.3081)</li>
+                    <li><strong>Tensor:</strong> PyTorch tensor format</li>
+                </ul>
+            </div>
+            <div class="technical-item">
+                <h4>Model Performance</h4>
+                <ul>
+                    <li><strong>Training Dataset:</strong> 60,000 MNIST images</li>
+                    <li><strong>Test Accuracy:</strong> ~98.5%</li>
+                    <li><strong>Inference Time:</strong> <10ms on CPU</li>
+                    <li><strong>Model Size:</strong> ~250KB</li>
+                    <li><strong>Framework:</strong> PyTorch</li>
+                </ul>
+            </div>
+            <div class="technical-item">
+                <h4>Implementation Details</h4>
+                <ul>
+                    <li><strong>Backend:</strong> FastAPI + PyTorch</li>
+                    <li><strong>Frontend:</strong> HTML5 Canvas + JavaScript</li>
+                    <li><strong>Preprocessing:</strong> PIL + OpenCV</li>
+                    <li><strong>Real-time:</strong> Auto-prediction on draw</li>
+                    <li><strong>Mobile:</strong> Touch support included</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/mnist_canvas.js"></script>
+<script>
+    // Initialize MNIST functionality
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set active navigation tab
+        if (window.CNNPlayground && window.CNNPlayground.setActiveNavTab) {
+            window.CNNPlayground.setActiveNavTab('mnist');
+        }
+
+        // Initialize MNIST canvas
+        const mnistCanvas = new MNISTCanvas();
+
+        // Show canvas overlay initially
+        setTimeout(() => {
+            const overlay = document.getElementById('canvasOverlay');
+            if (overlay) {
+                overlay.classList.add('show');
+            }
+        }, 1000);
+
+        // Load model information
+        fetch('/api/mnist/model_info')
+            .then(response => response.json())
+            .then(data => {
+                const modelDetails = document.getElementById('modelDetails');
+                if (modelDetails && data) {
+                    modelDetails.innerHTML = `
+                        <p><strong>Architecture:</strong> ${data.architecture || 'LeNet-5'}</p>
+                        <p><strong>Parameters:</strong> ${data.total_parameters?.toLocaleString() || '~62K'}</p>
+                        <p><strong>Input Size:</strong> ${data.input_size || '28×28 grayscale'}</p>
+                        <p><strong>Device:</strong> ${data.device || 'CPU'}</p>
+                        <p><strong>Classes:</strong> ${data.output_classes || 10} digits (0-9)</p>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.log('Could not load model info:', error);
+            });
+
+        console.log('MNIST page initialized successfully');
+    });
+</script>
+{% endblock %}
