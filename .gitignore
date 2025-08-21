@@ -1,40 +1,23 @@
-__pycache__/
-*.py[cod]
-*.so
-*.egg-info/
-dist/
-build/
+tempo/
+uploads/
+static/outputs/
+outputs/
 
-# Virtual environments
-venv/
-env/
-.env
-
-# Uploads and outputs
-static/uploads/*
-!static/uploads/.gitkeep
-static/outputs/*
-!static/outputs/.gitkeep
-temp/
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Models
+# Modele, ale NIE ignoruj własnego mnist_model.pth
 *.pth
-*.pt
-*.onnx
+!mnist_model.pth
 
-# IDE
-.vscode/
+# Pliki systemowe/IDE
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.env
+.venv
 .idea/
+.vscode/
 *.swp
-*.swo
 
-# Node modules
-node_modules/
-
-static/uploads/*
-static/outputs/*
+# Pliki logów
+*.log
