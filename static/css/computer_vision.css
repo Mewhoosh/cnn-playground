@@ -767,7 +767,7 @@
     border: 1px solid var(--border-color);
 }
 
-/* Live Panel Specific Styles */
+/* Live Panel Specific Styles - COMPLETELY IMPROVED */
 .live-controls {
     display: flex;
     gap: 15px;
@@ -778,6 +778,7 @@
 
 .camera-container {
     margin: 30px 0;
+    position: relative;
 }
 
 .camera-display {
@@ -790,6 +791,11 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.camera-display:hover {
+    box-shadow: 0 10px 25px var(--shadow-medium);
 }
 
 .camera-placeholder {
@@ -801,6 +807,7 @@
 .placeholder-icon {
     font-size: 3em;
     margin-bottom: 20px;
+    color: var(--accent-color);
 }
 
 .camera-placeholder h4 {
@@ -820,212 +827,255 @@
     opacity: 0.8;
 }
 
+/* FULLSCREEN OVERLAY - COMPLETELY REDESIGNED */
+.fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent any scrolling */
+}
+
+/* Video container that maintains aspect ratio and centers content */
+.fullscreen-video-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: 85vh; /* Leave space for controls */
+    position: relative;
+}
+
+/* Fullscreen canvas styling */
+.fullscreen-canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    display: block;
+}
+
+/* Close button - always visible and accessible */
+.fullscreen-close-btn {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: #333;
+    z-index: 10001;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.fullscreen-close-btn:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.fullscreen-close-btn:active {
+    transform: scale(0.95);
+}
+
+/* Fullscreen info overlay */
+.fullscreen-info {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px 25px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 10001;
+}
+
+.fullscreen-stats {
+    display: flex;
+    gap: 30px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.fullscreen-stats span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fullscreen-stats strong {
+    color: #00ff00;
+    font-weight: 700;
+}
+
+/* IMPROVED VIDEO AND CANVAS STYLING */
 #liveVideo, #liveCanvas {
     max-width: 100%;
-    max-height: 400px;
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
     border-radius: 12px;
     box-shadow: 0 10px 25px var(--shadow-medium);
+    display: block;
+    margin: 0 auto;
+    object-fit: contain; /* Ensures proper aspect ratio */
 }
 
-.live-stats {
-    background: var(--bg-secondary);
-    padding: 25px;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    margin-top: 25px;
-}
-
-.live-stats .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-}
-
-.live-detection-log {
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
-}
-
-.live-detection-log h4 {
-    color: var(--text-primary);
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    font-weight: 600;
-}
-
-.detection-log-list {
-    background: var(--bg-primary);
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-/* Button Styles */
-.btn {
-    background: linear-gradient(135deg, var(--accent-color), #a855f7);
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 25px;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
-}
-
-[data-theme="dark"] .btn {
-    background: linear-gradient(135deg, #3b82f6, #1e40af);
-    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
-}
-
-.btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-}
-
-[data-theme="dark"] .btn:hover {
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--accent-color), #a855f7);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #10b981, #059669);
-    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
-}
-
-.btn-success:hover {
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-    .analysis-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-
-    .model-info-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .video-comparison {
-        grid-template-columns: 1fr;
-    }
-}
-
+/* Mobile responsive adjustments for fullscreen */
 @media (max-width: 768px) {
-    .main-tabs {
-        flex-direction: column;
-        align-items: stretch;
+    .fullscreen-close-btn {
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
     }
 
-    .main-tab {
-        min-width: auto;
-        justify-content: center;
-        text-align: center;
+    .fullscreen-info {
+        bottom: 20px;
+        padding: 12px 20px;
     }
 
-    .config-grid {
-        grid-template-columns: 1fr;
+    .fullscreen-stats {
+        gap: 20px;
+        font-size: 13px;
     }
 
-    .upload-section {
-        padding: 30px 20px;
-    }
-
-    .model-configuration {
-        padding: 20px;
-    }
-
-    .analysis-panel {
-        padding: 20px;
-    }
-
-    .image-container {
-        min-height: 250px;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .analysis-tabs {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .analysis-tab {
-        width: 200px;
-        text-align: center;
-    }
-
-    .detailed-analysis {
-        padding: 20px;
-    }
-
-    .summary-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .video-controls,
-    .live-controls {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .btn {
-        min-width: 200px;
-    }
-
-    .live-stats .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .fullscreen-video-container {
+        max-height: 80vh; /* More space on mobile */
     }
 }
 
 @media (max-width: 480px) {
-    .analysis-panel h3 {
-        font-size: 1.1em;
+    .fullscreen-overlay {
+        padding: 10px;
     }
 
-    .image-container {
-        min-height: 200px;
+    .fullscreen-close-btn {
+        top: 15px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
     }
 
-    .stat-value {
-        font-size: 1.3em;
+    .fullscreen-info {
+        bottom: 15px;
+        padding: 10px 15px;
     }
 
-    .model-card {
-        padding: 20px;
-    }
-
-    .camera-placeholder {
-        padding: 40px 20px;
-    }
-
-    .placeholder-icon {
-        font-size: 2.5em;
+    .fullscreen-stats {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
     }
 }
 
-/* Animation for spin */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+/* Landscape orientation optimization */
+@media (orientation: landscape) and (max-height: 600px) {
+    .fullscreen-video-container {
+        max-height: 90vh;
+    }
+
+    .fullscreen-info {
+        bottom: 15px;
+    }
+
+    .fullscreen-close-btn {
+        top: 15px;
+        right: 15px;
+    }
+}
+
+/* Hide scrollbars completely in fullscreen */
+.fullscreen-overlay * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.fullscreen-overlay *::-webkit-scrollbar {
+    display: none;
+}
+
+/* Ensure no page scrolling when fullscreen is active */
+body.fullscreen-active {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+/* ...existing code... */
+
+/* ANIMATION IMPROVEMENTS */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+.detection-box {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* LOADING STATES */
+.camera-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.camera-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+.camera-loading p {
+    color: var(--text-secondary);
+    font-size: 1.1em;
+    text-align: center;
+    margin-bottom: 10px;
 }

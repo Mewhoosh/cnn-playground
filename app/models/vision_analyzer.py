@@ -105,8 +105,12 @@ class ObjectDetector:
         try:
             self._load_model()
         except ImportError as e:
-            logger.warning(f"[ObjectDetector] Model not available: {e}")
-            self.model = None
+            logger.error(f"[ObjectDetector] Model not available: {e}")
+            # Don't set model to None - raise the error
+            raise e
+        except Exception as e:
+            logger.error(f"[ObjectDetector] Failed to load model: {e}")
+            raise e
 
     def _load_model(self):
         """Load detection model"""
@@ -146,39 +150,58 @@ class ObjectDetector:
         ]
 
     def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> Dict:
-        """Detect objects using models"""
+        """Detect objects using models - NO MORE MOCK RESULTS"""
         start_time = time.time()
 
         try:
+            # Load image
             image = Image.open(image_path).convert('RGB')
             image_width, image_height = image.size
 
+            # FIXED: Always require real model
             if self.model is None:
-                return self._generate_mock_detection(image_width, image_height, confidence_threshold)
+                raise RuntimeError("Model not loaded - cannot perform detection")
 
-            # Run inference
-            results = self.model(image_path, conf=confidence_threshold, verbose=False)
+            # Run inference with error handling
+            try:
+                results = self.model(image_path, conf=confidence_threshold, verbose=False)
+            except Exception as e:
+                logger.error(f"[ObjectDetector] Model inference failed: {e}")
+                raise RuntimeError(f"Model inference failed: {str(e)}")
 
             # Process results
             objects = []
-            for result in results:
-                boxes = result.boxes
-                if boxes is not None:
-                    for box in boxes:
-                        bbox = box.xyxy[0].cpu().numpy()
-                        confidence = float(box.conf[0])
-                        class_id = int(box.cls[0])
-                        area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+            if results:
+                for result in results:
+                    if hasattr(result, 'boxes') and result.boxes is not None:
+                        boxes = result.boxes
+                        for box in boxes:
+                            try:
+                                bbox = box.xyxy[0].cpu().numpy()
+                                confidence = float(box.conf[0])
+                                class_id = int(box.cls[0])
 
-                        objects.append({
-                            'class_name': self.class_names[class_id],
-                            'class_id': class_id,
-                            'confidence': confidence,
-                            'bbox': bbox.tolist(),
-                            'area': float(area)
-                        })
+                                # Validate class_id
+                                if 0 <= class_id < len(self.class_names):
+                                    area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+
+                                    objects.append({
+                                        'class_name': self.class_names[class_id],
+                                        'class_id': class_id,
+                                        'confidence': confidence,
+                                        'bbox': bbox.tolist(),
+                                        'area': float(area)
+                                    })
+                                else:
+                                    logger.warning(f"[ObjectDetector] Invalid class_id: {class_id}")
+
+                            except Exception as e:
+                                logger.error(f"[ObjectDetector] Error processing box: {e}")
+                                continue
 
             processing_time = int((time.time() - start_time) * 1000)
+
+            logger.info(f"[ObjectDetector] Detected {len(objects)} objects in {processing_time}ms")
 
             return {
                 'status': 'success',
@@ -187,33 +210,20 @@ class ObjectDetector:
                 'model_info': {
                     'architecture': self.model_name.upper(),
                     'confidence_threshold': confidence_threshold,
-                    'device': str(self.device)
+                    'device': str(self.device),
+                    'image_size': f"{image_width}x{image_height}"
                 }
             }
 
         except Exception as e:
+            processing_time = int((time.time() - start_time) * 1000)
             logger.error(f"[ObjectDetector] Error during detection: {e}")
             return {
                 'status': 'error',
                 'message': str(e),
                 'objects': [],
-                'processing_time': 0
+                'processing_time': processing_time
             }
-
-    def _generate_mock_detection(self, width: int, height: int, confidence_threshold: float) -> Dict:
-        """Generate mock detection for demo"""
-        logger.info("[ObjectDetector] Generating mock detection results")
-        return {
-            'status': 'success',
-            'objects': [],
-            'processing_time': 120,
-            'model_info': {
-                'architecture': self.model_name.upper(),
-                'confidence_threshold': confidence_threshold,
-                'device': 'CPU (Demo Mode)'
-            },
-            'demo_mode': True
-        }
 
     def visualize_detections(self, image_path: str, objects: List[Dict], output_path: str) -> str:
         """Create detection visualization"""
@@ -700,28 +710,31 @@ async def process_video_complete(video_path: str, detection_model: str = "yolo11
 
 async def process_live_frame(frame_path: str, detection_model: str = "yolo11n",
                              confidence_threshold: float = 0.3) -> Dict:
-    """Process single frame from live camera feed"""
+    """Process single frame from live camera feed - FIXED VERSION"""
 
     try:
-        # Initialize detector
+        # Initialize detector with proper model
         detector = ObjectDetector(detection_model)
 
-        if detector.model is None:
-            return _generate_mock_live_results()
-
-        # Process frame
+        # FIXED: Remove mock/demo mode - always try real detection
         start_time = time.time()
         results = detector.detect_objects(frame_path, confidence_threshold)
         processing_time = int((time.time() - start_time) * 1000)
 
         if results['status'] == 'success':
+            logger.info(f"[LiveProcessor] Processed frame: {len(results['objects'])} objects detected in {processing_time}ms")
             return {
                 'status': 'success',
                 'objects': results['objects'],
                 'processing_time': processing_time,
-                'model': detection_model
+                'model': detection_model,
+                'frame_info': {
+                    'confidence_threshold': confidence_threshold,
+                    'timestamp': time.time()
+                }
             }
         else:
+            logger.warning(f"[LiveProcessor] Detection failed: {results.get('message', 'Unknown error')}")
             return {
                 'status': 'error',
                 'message': results.get('message', 'Detection failed'),
@@ -759,33 +772,16 @@ def _generate_mock_video_results() -> Dict:
 
 
 def _generate_mock_live_results() -> Dict:
-    """Generate mock live detection results"""
-    import random
-
-    # Generate random objects for demo
-    demo_objects = ['person', 'chair', 'book', 'bottle', 'laptop']
-    num_objects = random.randint(0, 3)
-
-    objects = []
-    for i in range(num_objects):
-        obj_class = random.choice(demo_objects)
-        objects.append({
-            'class_name': obj_class,
-            'confidence': random.uniform(0.4, 0.9),
-            'bbox': [
-                random.randint(50, 200),
-                random.randint(50, 200),
-                random.randint(250, 400),
-                random.randint(250, 400)
-            ]
-        })
+    """Generate mock live detection results - REMOVED FROM MAIN FLOW"""
+    logger.warning("[LiveProcessor] Using mock results - models not available")
 
     return {
         'status': 'success',
-        'objects': objects,
-        'processing_time': random.randint(30, 80),
-        'model': 'yolo11n (demo)',
-        'demo_mode': True
+        'objects': [],  # Empty for demo
+        'processing_time': 50,
+        'model': 'demo_mode',
+        'demo_mode': True,
+        'message': 'Demo mode - install ultralytics for real detection'
     }
 
 

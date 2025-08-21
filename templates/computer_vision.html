@@ -348,11 +348,43 @@
         </div>
 
         <div class="camera-container">
-            <div class="camera-display">
+            <div class="camera-display" id="cameraDisplay">
                 <video id="liveVideo" autoplay muted style="display:none;"></video>
                 <canvas id="liveCanvas" style="display:none;"></canvas>
+
+                <!-- Camera Status Indicator -->
+                <div class="camera-status" id="cameraStatus" style="display:none;">
+                    <span id="statusText">Initializing...</span>
+                </div>
+
+                <!-- Performance Indicator -->
+                <div class="performance-indicator" id="performanceIndicator" style="display:none;">
+                    <div class="perf-item">
+                        <span class="perf-value" id="perfFps">0</span>
+                        <span class="perf-label">FPS</span>
+                    </div>
+                    <div class="perf-item">
+                        <span class="perf-value" id="perfLatency">0</span>
+                        <span class="perf-label">ms</span>
+                    </div>
+                    <div class="perf-item">
+                        <span class="perf-value" id="perfObjects">0</span>
+                        <span class="perf-label">Objects</span>
+                    </div>
+                </div>
+
+                <!-- Camera Controls Overlay -->
+                <div class="camera-controls-overlay" id="cameraControlsOverlay" style="display:none;">
+                    <button class="control-btn" id="fullscreenBtn" title="Fullscreen">
+                        📺
+                    </button>
+                    <button class="control-btn" id="settingsBtn" title="Settings">
+                        ⚙️
+                    </button>
+                </div>
+
                 <div class="camera-placeholder" id="cameraPlaceholder">
-                    <div class="placeholder-icon">CAMERA</div>
+                    <div class="placeholder-icon">📷</div>
                     <h4>Camera Ready</h4>
                     <p>Click "Start Camera" to begin real-time object detection</p>
                     <small>Your browser will request camera permission</small>
@@ -402,6 +434,14 @@
 
         // Initialize Computer Vision Analyzer
         const computerVisionAnalyzer = new ComputerVisionAnalyzer();
+
+        // Add fullscreen functionality
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => {
+                computerVisionAnalyzer.toggleFullscreen();
+            });
+        }
 
         console.log('Computer Vision page initialized');
     });
