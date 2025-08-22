@@ -20,5 +20,6 @@ __pycache__/
 *.swp
 
 # Pliki logów
-*.log*.pt
+*.log
 *.pt
+
