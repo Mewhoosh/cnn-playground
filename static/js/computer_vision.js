@@ -728,7 +728,7 @@ class ComputerVisionAnalyzer {
         this.detectionHistory = [];
 
         // Reduced processing frequency for stability (3 FPS instead of 5)
-        const processingFps = 3;
+        const processingFps = parseInt(document.getElementById('processingFps')?.value || '3');
         const intervalMs = 1000 / processingFps;
 
         this.detectionInterval = setInterval(() => {
@@ -989,9 +989,8 @@ class ComputerVisionAnalyzer {
         if (latencyEl) latencyEl.textContent = Math.round(this.detectionStats.averageLatency) + 'ms';
 
         if (fpsEl) {
-            const actualFps = this.detectionStats.averageLatency > 0 ?
-                Math.round(1000 / this.detectionStats.averageLatency) : 0;
-            fpsEl.textContent = Math.min(actualFps, 3); // Cap at 3 FPS for display
+            const selectedFps = parseInt(document.getElementById('processingFps')?.value || '3');
+            fpsEl.textContent = selectedFps;
         }
 
         if (uptimeEl) {
