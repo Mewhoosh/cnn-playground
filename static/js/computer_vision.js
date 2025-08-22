@@ -36,6 +36,13 @@ class ComputerVisionAnalyzer {
         this.lastFrameTime = 0;
         this.frameSkipCounter = 0;
 
+        // LOCAL MODELS: TensorFlow.js support
+        this.localModels = {
+            cocoSsd: null,
+            isLoading: false,
+            isLoaded: false
+        };
+
         this.detectionStats = {
             totalFrames: 0,
             averageLatency: 0,
@@ -493,6 +500,192 @@ class ComputerVisionAnalyzer {
                 liveConfidenceValue.textContent = event.target.value;
             });
         }
+
+        // Setup model type change handler
+        const liveDetectionModel = document.getElementById('liveDetectionModel');
+        if (liveDetectionModel) {
+            // Initialize FPS options based on default model
+            this.updateFpsOptions(liveDetectionModel.value);
+
+            liveDetectionModel.addEventListener('change', (event) => {
+                this.handleModelTypeChange(event.target.value);
+            });
+        }
+
+        // Add FPS change indicator
+        const processingFpsSelect = document.getElementById('processingFps');
+        if (processingFpsSelect) {
+            processingFpsSelect.addEventListener('change', (event) => {
+                const fps = event.target.value;
+                const isLocal = this.isUsingLocalModel();
+                if (isLocal && parseInt(fps) >= 20) {
+                    this.showSuccess(`Ultra-smooth ${fps} FPS mode activated! 🚀`);
+                } else if (isLocal && parseInt(fps) >= 10) {
+                    this.showSuccess(`High-performance ${fps} FPS mode enabled!`);
+                }
+            });
+        }
+    }
+
+    /**
+     * Handle model type change (local vs server)
+     * @param {string} modelValue - Selected model value
+     * @private
+     */
+    handleModelTypeChange(modelValue) {
+        // Update FPS options based on model type
+        this.updateFpsOptions(modelValue);
+
+        if (modelValue.startsWith('local_')) {
+            this.loadLocalModel(modelValue);
+        }
+    }
+
+    /**
+     * Update FPS options based on selected model type
+     * @param {string} modelValue - Selected model value
+     * @private
+     */
+    updateFpsOptions(modelValue) {
+        const processingFpsSelect = document.getElementById('processingFps');
+        if (!processingFpsSelect) return;
+
+        const isLocal = modelValue.startsWith('local_');
+
+        // Clear existing options
+        processingFpsSelect.innerHTML = '';
+
+        if (isLocal) {
+            // High FPS options for local models
+            const localOptions = [
+                { value: '5', text: '5 FPS (Balanced)' },
+                { value: '10', text: '10 FPS (Smooth)' },
+                { value: '15', text: '15 FPS (High Performance)' },
+                { value: '20', text: '20 FPS (Ultra Smooth)' },
+                { value: '30', text: '30 FPS (Maximum)' }
+            ];
+
+            localOptions.forEach(option => {
+                const optionEl = document.createElement('option');
+                optionEl.value = option.value;
+                optionEl.textContent = option.text;
+                if (option.value === '15') optionEl.selected = true; // Default to 15 FPS for local
+                processingFpsSelect.appendChild(optionEl);
+            });
+
+            this.showSuccess('Local model selected - High FPS modes available!');
+        } else {
+            // Conservative FPS options for server models
+            const serverOptions = [
+                { value: '1', text: '1 FPS (Battery Saving)' },
+                { value: '2', text: '2 FPS (Conservative)' },
+                { value: '3', text: '3 FPS (Balanced)' },
+                { value: '5', text: '5 FPS (Maximum for Server)' }
+            ];
+
+            serverOptions.forEach(option => {
+                const optionEl = document.createElement('option');
+                optionEl.value = option.value;
+                optionEl.textContent = option.text;
+                if (option.value === '3') optionEl.selected = true; // Default to 3 FPS for server
+                processingFpsSelect.appendChild(optionEl);
+            });
+        }
+
+        console.log(`[ComputerVision] Updated FPS options for ${isLocal ? 'local' : 'server'} model`);
+    }
+
+    /**
+     * Load TensorFlow.js local model
+     * @param {string} modelType - Type of local model
+     * @private
+     */
+    async loadLocalModel(modelType) {
+        if (this.localModels.isLoading) {
+            this.showWarning('Local model is already loading...');
+            return;
+        }
+
+        if (this.localModels.isLoaded && modelType === 'local_coco_ssd') {
+            console.log('[ComputerVision] Local COCO-SSD model already loaded');
+            return;
+        }
+
+        try {
+            this.localModels.isLoading = true;
+            this.showSuccess('Loading local TensorFlow.js model...');
+
+            // Load TensorFlow.js and COCO-SSD
+            if (!window.tf) {
+                const tfScript = document.createElement('script');
+                tfScript.src = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest';
+                document.head.appendChild(tfScript);
+                await new Promise(resolve => tfScript.onload = resolve);
+            }
+
+            if (!window.cocoSsd) {
+                const cocoScript = document.createElement('script');
+                cocoScript.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest';
+                document.head.appendChild(cocoScript);
+                await new Promise(resolve => cocoScript.onload = resolve);
+            }
+
+            // Load the model
+            console.log('[ComputerVision] Loading COCO-SSD model...');
+            this.localModels.cocoSsd = await cocoSsd.load();
+            this.localModels.isLoaded = true;
+
+            this.showSuccess('Local TensorFlow.js model loaded successfully! 🚀');
+            console.log('[ComputerVision] COCO-SSD model loaded successfully');
+
+        } catch (error) {
+            console.error('[ComputerVision] Error loading local model:', error);
+            this.showError('Failed to load local model: ' + error.message);
+        } finally {
+            this.localModels.isLoading = false;
+        }
+    }
+
+    /**
+     * Perform local object detection using TensorFlow.js
+     * @param {HTMLCanvasElement} canvas - Canvas with image data
+     * @returns {Promise<Array>} Detection results
+     * @private
+     */
+    async performLocalDetection(canvas) {
+        if (!this.localModels.cocoSsd) {
+            throw new Error('Local model not loaded');
+        }
+
+        try {
+            const predictions = await this.localModels.cocoSsd.detect(canvas);
+
+            // Convert to our format
+            return predictions.map(prediction => ({
+                class_name: prediction.class,
+                confidence: prediction.score,
+                bbox: [
+                    prediction.bbox[0], // x1
+                    prediction.bbox[1], // y1
+                    prediction.bbox[0] + prediction.bbox[2], // x2
+                    prediction.bbox[1] + prediction.bbox[3]  // y2
+                ]
+            }));
+
+        } catch (error) {
+            console.error('[ComputerVision] Local detection error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Check if current model is local
+     * @returns {boolean} True if using local model
+     * @private
+     */
+    isUsingLocalModel() {
+        const modelValue = document.getElementById('liveDetectionModel')?.value || '';
+        return modelValue.startsWith('local_');
     }
 
     /**
@@ -930,7 +1123,7 @@ class ComputerVisionAnalyzer {
     }
 
     /**
-     * OPTIMIZED: Process a single frame with throttling and resolution reduction
+     * OPTIMIZED: Process a single frame with throttling, resolution reduction, and LOCAL MODEL support
      * @private
      */
     async processLiveFrame() {
@@ -939,10 +1132,18 @@ class ComputerVisionAnalyzer {
             return;
         }
 
-        // ADAPTIVE FPS: Check if enough time has passed based on current latency
+        // ADAPTIVE FPS: Different throttling for local vs server models
         const now = Date.now();
         const timeSinceLastFrame = now - this.lastFrameTime;
-        const minInterval = Math.max(200, this.detectionStats.averageLatency * 1.2); // At least 200ms or 1.2x latency
+
+        let minInterval;
+        if (this.isUsingLocalModel()) {
+            // More aggressive FPS for local models - minimal throttling
+            minInterval = Math.max(33, this.detectionStats.averageLatency * 1.1); // At least 30 FPS or 1.1x latency
+        } else {
+            // Conservative throttling for server models
+            minInterval = Math.max(200, this.detectionStats.averageLatency * 1.2); // At least 200ms or 1.2x latency
+        }
 
         if (timeSinceLastFrame < minInterval) {
             return; // Skip this frame to prevent overload
@@ -962,6 +1163,79 @@ class ComputerVisionAnalyzer {
             // Always update visual canvas with current frame
             this.cameraContext.drawImage(video, 0, 0, this.cameraCanvas.width, this.cameraCanvas.height);
 
+            // Check if using local model
+            if (this.isUsingLocalModel()) {
+                await this.processFrameLocally(video, startTime);
+            } else {
+                await this.processFrameOnServer(video, startTime);
+            }
+
+        } catch (error) {
+            console.error('[ComputerVision] Live frame processing error:', error);
+            this.isProcessingFrame = false;
+        }
+    }
+
+    /**
+     * Process frame using local TensorFlow.js model
+     * @param {HTMLVideoElement} video - Video element
+     * @param {number} startTime - Processing start time
+     * @private
+     */
+    async processFrameLocally(video, startTime) {
+        try {
+            if (!this.localModels.cocoSsd) {
+                console.warn('[ComputerVision] Local model not loaded');
+                this.isProcessingFrame = false;
+                return;
+            }
+
+            // Get confidence threshold
+            const confidenceThreshold = parseFloat(document.getElementById('liveConfidence')?.value || '0.3');
+
+            // Create temporary canvas for detection - use full resolution for local processing
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // For local models, we can afford higher resolution since processing is local
+            const scaleFactor = Math.min(640 / video.videoWidth, 480 / video.videoHeight);
+            tempCanvas.width = Math.floor(video.videoWidth * scaleFactor);
+            tempCanvas.height = Math.floor(video.videoHeight * scaleFactor);
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Perform local detection
+            const predictions = await this.performLocalDetection(tempCanvas);
+
+            // Filter by confidence
+            const filteredPredictions = predictions.filter(pred => pred.confidence >= confidenceThreshold);
+
+            // Scale detections back to canvas size
+            const scaledDetections = this.scaleDetections(filteredPredictions,
+                tempCanvas.width, tempCanvas.height,
+                this.cameraCanvas.width, this.cameraCanvas.height);
+
+            const latency = Date.now() - startTime;
+
+            // Process detections with stability filtering
+            this.processStableDetections({ objects: scaledDetections }, latency);
+
+            console.log(`[ComputerVision] Local detection: ${scaledDetections.length} objects in ${latency}ms`);
+
+        } catch (error) {
+            console.error('[ComputerVision] Local detection error:', error);
+        } finally {
+            this.isProcessingFrame = false;
+        }
+    }
+
+    /**
+     * Process frame on server (original method)
+     * @param {HTMLVideoElement} video - Video element
+     * @param {number} startTime - Processing start time
+     * @private
+     */
+    async processFrameOnServer(video, startTime) {
+        try {
             // RESOLUTION REDUCTION: Create smaller canvas for processing
             const processCanvas = document.createElement('canvas');
             const processCtx = processCanvas.getContext('2d');
@@ -1025,7 +1299,7 @@ class ComputerVisionAnalyzer {
             }, 'image/jpeg', 0.6); // Lower quality for faster upload
 
         } catch (error) {
-            console.error('[ComputerVision] Live frame processing error:', error);
+            console.error('[ComputerVision] Server processing error:', error);
             this.isProcessingFrame = false;
         }
     }
@@ -1319,7 +1593,7 @@ class ComputerVisionAnalyzer {
     }
 
     /**
-     * FIXED: Update live statistics display with correct FPS
+     * FIXED: Update live statistics display with correct FPS and model info
      * @private
      */
     updateLiveStatsDisplay() {
@@ -1334,7 +1608,8 @@ class ComputerVisionAnalyzer {
         if (fpsEl) {
             // Show selected processing rate, not calculated FPS
             const selectedFps = parseInt(document.getElementById('processingFps')?.value || '3');
-            fpsEl.textContent = selectedFps;
+            const modelType = this.isUsingLocalModel() ? ' (Local)' : ' (Server)';
+            fpsEl.textContent = selectedFps + modelType;
         }
 
         if (uptimeEl) {
