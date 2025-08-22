@@ -1,9 +1,9 @@
 /**
- * Computer Vision Analysis Interface
- * Professional multi-mode analyzer for image processing, video analysis, and live camera detection
+ * Computer Vision Analysis Interface - COMPLETE OPTIMIZED VERSION
+ * Professional multi-mode analyzer with performance optimizations
  *
  * @class ComputerVisionAnalyzer
- * @version 2.0.0
+ * @version 2.1.0 - Performance Optimized
  * @author CNN Playground
  */
 
@@ -30,6 +30,12 @@ class ComputerVisionAnalyzer {
         this.detectionInterval = null;
         this.isDetecting = false;
         this.sessionStartTime = null;
+
+        // PERFORMANCE: Add frame processing throttling
+        this.isProcessingFrame = false;
+        this.lastFrameTime = 0;
+        this.frameSkipCounter = 0;
+
         this.detectionStats = {
             totalFrames: 0,
             averageLatency: 0,
@@ -65,7 +71,7 @@ class ComputerVisionAnalyzer {
         this.setupLiveMode();
         this.setupAnalysisTabNavigation();
 
-        console.log('[ComputerVision] Professional analyzer initialized');
+        console.log('[ComputerVision] Professional analyzer initialized with performance optimizations');
     }
 
     /**
@@ -556,44 +562,210 @@ class ComputerVisionAnalyzer {
     }
 
     /**
-     * Toggle fullscreen mode for camera
+     * Toggle fullscreen mode for camera - FIXED VERSION
      * @private
      */
     toggleFullscreen() {
-        const cameraDisplay = document.querySelector('.camera-display');
-        if (!cameraDisplay) return;
-
         if (!this.isFullscreen) {
-            // Enter fullscreen
-            cameraDisplay.style.position = 'fixed';
-            cameraDisplay.style.top = '0';
-            cameraDisplay.style.left = '0';
-            cameraDisplay.style.width = '100vw';
-            cameraDisplay.style.height = '100vh';
-            cameraDisplay.style.zIndex = '9999';
-            cameraDisplay.style.background = '#000';
-
-            this.fullscreenBtn.innerHTML = 'Exit Fullscreen';
-            this.isFullscreen = true;
-
-            // Resize canvas to fullscreen
-            this.resizeCanvasToFullscreen();
+            this.enterFullscreen();
         } else {
-            // Exit fullscreen
-            cameraDisplay.style.position = '';
-            cameraDisplay.style.top = '';
-            cameraDisplay.style.left = '';
-            cameraDisplay.style.width = '';
-            cameraDisplay.style.height = '';
-            cameraDisplay.style.zIndex = '';
-            cameraDisplay.style.background = '';
-
-            this.fullscreenBtn.innerHTML = 'Fullscreen';
-            this.isFullscreen = false;
-
-            // Restore canvas size
-            this.resizeCanvasToNormal();
+            this.exitFullscreen();
         }
+    }
+
+    /**
+     * Enter fullscreen mode with proper overlay
+     * @private
+     */
+    enterFullscreen() {
+        // Create fullscreen overlay
+        const fullscreenOverlay = document.createElement('div');
+        fullscreenOverlay.className = 'fullscreen-overlay';
+        fullscreenOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        `;
+
+        // Create video container
+        const videoContainer = document.createElement('div');
+        videoContainer.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 85vh;
+            position: relative;
+        `;
+
+        // Clone and setup canvas for fullscreen
+        const originalCanvas = this.cameraCanvas;
+        const fullscreenCanvas = originalCanvas.cloneNode(true);
+        fullscreenCanvas.id = 'fullscreenCanvas';
+        fullscreenCanvas.className = 'fullscreen-canvas';
+        fullscreenCanvas.style.cssText = `
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            display: block;
+        `;
+
+        // Create close button
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'fullscreen-close-btn';
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = `
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: #333;
+            z-index: 10001;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        `;
+
+        closeBtn.addEventListener('click', () => this.exitFullscreen());
+        closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.background = 'white';
+            closeBtn.style.transform = 'scale(1.1)';
+        });
+        closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.background = 'rgba(255, 255, 255, 0.9)';
+            closeBtn.style.transform = 'scale(1)';
+        });
+
+        // Create info overlay
+        const infoOverlay = document.createElement('div');
+        infoOverlay.className = 'fullscreen-info';
+        infoOverlay.style.cssText = `
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 10001;
+        `;
+
+        const statsHtml = `
+            <div style="display: flex; gap: 30px; color: white; font-size: 14px; font-weight: 500;">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <span>Objects:</span>
+                    <strong style="color: #00ff00;">${this.detectionStats.objectCount}</strong>
+                </span>
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <span>FPS:</span>
+                    <strong style="color: #00ff00;">${parseInt(document.getElementById('processingFps')?.value || '3')}</strong>
+                </span>
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <span>Latency:</span>
+                    <strong style="color: #00ff00;">${Math.round(this.detectionStats.averageLatency)}ms</strong>
+                </span>
+            </div>
+        `;
+        infoOverlay.innerHTML = statsHtml;
+
+        // Assemble fullscreen layout
+        videoContainer.appendChild(fullscreenCanvas);
+        fullscreenOverlay.appendChild(videoContainer);
+        fullscreenOverlay.appendChild(closeBtn);
+        fullscreenOverlay.appendChild(infoOverlay);
+
+        // Add to document
+        document.body.appendChild(fullscreenOverlay);
+
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+        document.body.classList.add('fullscreen-active');
+
+        // Setup canvas context for fullscreen
+        const fullscreenContext = fullscreenCanvas.getContext('2d');
+        this.fullscreenCanvas = fullscreenCanvas;
+        this.fullscreenContext = fullscreenContext;
+        this.fullscreenOverlay = fullscreenOverlay;
+
+        // Update button text
+        if (this.fullscreenBtn) {
+            this.fullscreenBtn.innerHTML = 'Exit Fullscreen';
+        }
+
+        this.isFullscreen = true;
+
+        // Handle escape key
+        this.handleEscapeKey = (e) => {
+            if (e.key === 'Escape') {
+                this.exitFullscreen();
+            }
+        };
+        document.addEventListener('keydown', this.handleEscapeKey);
+
+        console.log('[ComputerVision] Entered fullscreen mode');
+    }
+
+    /**
+     * Exit fullscreen mode
+     * @private
+     */
+    exitFullscreen() {
+        // Remove fullscreen overlay
+        if (this.fullscreenOverlay) {
+            document.body.removeChild(this.fullscreenOverlay);
+            this.fullscreenOverlay = null;
+        }
+
+        // Restore body scrolling
+        document.body.style.overflow = '';
+        document.body.classList.remove('fullscreen-active');
+
+        // Clean up fullscreen canvas references
+        this.fullscreenCanvas = null;
+        this.fullscreenContext = null;
+
+        // Update button text
+        if (this.fullscreenBtn) {
+            this.fullscreenBtn.innerHTML = 'Fullscreen';
+        }
+
+        this.isFullscreen = false;
+
+        // Remove escape key handler
+        if (this.handleEscapeKey) {
+            document.removeEventListener('keydown', this.handleEscapeKey);
+            this.handleEscapeKey = null;
+        }
+
+        console.log('[ComputerVision] Exited fullscreen mode');
     }
 
     /**
@@ -707,14 +879,18 @@ class ComputerVisionAnalyzer {
     }
 
     /**
-     * Start detection processing loop with improved stability
+     * Start detection processing loop with improved stability and performance
      * @private
      */
     startDetection() {
         if (this.isDetecting) return;
 
         this.isDetecting = true;
+        this.isProcessingFrame = false; // Reset processing flag
         this.sessionStartTime = Date.now();
+        this.lastFrameTime = 0;
+        this.frameSkipCounter = 0;
+
         this.detectionStats = {
             totalFrames: 0,
             averageLatency: 0,
@@ -727,7 +903,7 @@ class ComputerVisionAnalyzer {
         this.stableDetections = [];
         this.detectionHistory = [];
 
-        // Reduced processing frequency for stability (3 FPS instead of 5)
+        // FIXED: Get processing FPS from user selection
         const processingFps = parseInt(document.getElementById('processingFps')?.value || '3');
         const intervalMs = 1000 / processingFps;
 
@@ -750,28 +926,60 @@ class ComputerVisionAnalyzer {
             this.fullscreenBtn.style.display = 'block';
         }
 
-        console.log('[ComputerVision] Detection started at', processingFps, 'FPS');
+        console.log('[ComputerVision] Detection started at', processingFps, 'FPS with performance optimizations');
     }
 
     /**
-     * Process a single frame for live detection with stability improvements
+     * OPTIMIZED: Process a single frame with throttling and resolution reduction
      * @private
      */
     async processLiveFrame() {
-        if (!this.cameraCanvas || !this.cameraContext || !this.isDetecting) return;
+        // THROTTLING: Skip if already processing a frame
+        if (this.isProcessingFrame || !this.cameraCanvas || !this.cameraContext || !this.isDetecting) {
+            return;
+        }
 
+        // ADAPTIVE FPS: Check if enough time has passed based on current latency
+        const now = Date.now();
+        const timeSinceLastFrame = now - this.lastFrameTime;
+        const minInterval = Math.max(200, this.detectionStats.averageLatency * 1.2); // At least 200ms or 1.2x latency
+
+        if (timeSinceLastFrame < minInterval) {
+            return; // Skip this frame to prevent overload
+        }
+
+        this.isProcessingFrame = true;
+        this.lastFrameTime = now;
         const startTime = Date.now();
 
         try {
             const video = document.getElementById('liveVideo');
-            if (!video || video.videoWidth === 0) return;
+            if (!video || video.videoWidth === 0) {
+                this.isProcessingFrame = false;
+                return;
+            }
 
-            // Draw current frame to canvas (always update the visual)
+            // Always update visual canvas with current frame
             this.cameraContext.drawImage(video, 0, 0, this.cameraCanvas.width, this.cameraCanvas.height);
 
-            // Convert canvas to blob for processing
-            this.cameraCanvas.toBlob(async (blob) => {
-                if (!blob || !this.isDetecting) return;
+            // RESOLUTION REDUCTION: Create smaller canvas for processing
+            const processCanvas = document.createElement('canvas');
+            const processCtx = processCanvas.getContext('2d');
+
+            // Reduce to 480x360 for processing (keeps aspect ratio)
+            const scaleFactor = Math.min(480 / video.videoWidth, 360 / video.videoHeight);
+            processCanvas.width = Math.floor(video.videoWidth * scaleFactor);
+            processCanvas.height = Math.floor(video.videoHeight * scaleFactor);
+
+            // Draw scaled-down frame
+            processCtx.drawImage(video, 0, 0, processCanvas.width, processCanvas.height);
+
+            // Convert to blob with lower quality
+            processCanvas.toBlob(async (blob) => {
+                if (!blob || !this.isDetecting) {
+                    this.isProcessingFrame = false;
+                    return;
+                }
 
                 try {
                     const config = this.getLiveDetectionConfig();
@@ -782,28 +990,69 @@ class ComputerVisionAnalyzer {
                     formData.append('detection_model', config.detectionModel);
                     formData.append('confidence_threshold', config.confidenceThreshold);
 
-                    // Send frame for processing
+                    // Send frame for processing with timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
                     const response = await fetch('/api/process_live_frame', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        signal: controller.signal
                     });
+
+                    clearTimeout(timeoutId);
 
                     if (response.ok) {
                         const data = await response.json();
                         const latency = Date.now() - startTime;
 
+                        // Scale detections back to original canvas size
+                        const scaledDetections = this.scaleDetections(data.objects || [],
+                            processCanvas.width, processCanvas.height,
+                            this.cameraCanvas.width, this.cameraCanvas.height);
+
                         // Process detections with stability filtering
-                        this.processStableDetections(data, latency);
+                        this.processStableDetections({ objects: scaledDetections }, latency);
                     }
 
                 } catch (error) {
-                    console.error('[ComputerVision] Frame processing error:', error);
+                    if (error.name !== 'AbortError') {
+                        console.error('[ComputerVision] Frame processing error:', error);
+                    }
+                } finally {
+                    this.isProcessingFrame = false;
                 }
-            }, 'image/jpeg', 0.8);
+            }, 'image/jpeg', 0.6); // Lower quality for faster upload
 
         } catch (error) {
             console.error('[ComputerVision] Live frame processing error:', error);
+            this.isProcessingFrame = false;
         }
+    }
+
+    /**
+     * Scale detection coordinates from processed image back to canvas size
+     * @param {Array} detections - Array of detection objects
+     * @param {number} fromWidth - Source image width
+     * @param {number} fromHeight - Source image height
+     * @param {number} toWidth - Target canvas width
+     * @param {number} toHeight - Target canvas height
+     * @returns {Array} Scaled detection objects
+     * @private
+     */
+    scaleDetections(detections, fromWidth, fromHeight, toWidth, toHeight) {
+        const scaleX = toWidth / fromWidth;
+        const scaleY = toHeight / fromHeight;
+
+        return detections.map(detection => ({
+            ...detection,
+            bbox: [
+                detection.bbox[0] * scaleX,
+                detection.bbox[1] * scaleY,
+                detection.bbox[2] * scaleX,
+                detection.bbox[3] * scaleY
+            ]
+        }));
     }
 
     /**
@@ -903,9 +1152,103 @@ class ComputerVisionAnalyzer {
             this.drawDetectionBox(obj, index);
         });
 
+        // Update fullscreen canvas if active
+        if (this.isFullscreen && this.fullscreenCanvas && this.fullscreenContext) {
+            this.updateFullscreenCanvas(objects);
+        }
+
         // Update detection log with stable detections
         if (objects.length > 0) {
             this.updateDetectionLog(objects);
+        }
+    }
+
+    /**
+     * Update fullscreen canvas with detections
+     * @param {Array} objects - Detection objects
+     * @private
+     */
+    updateFullscreenCanvas(objects) {
+        const video = document.getElementById('liveVideo');
+        if (!video || video.videoWidth === 0 || !this.fullscreenContext) return;
+
+        // Set canvas size to match video
+        this.fullscreenCanvas.width = video.videoWidth;
+        this.fullscreenCanvas.height = video.videoHeight;
+
+        // Draw video frame
+        this.fullscreenContext.drawImage(video, 0, 0, this.fullscreenCanvas.width, this.fullscreenCanvas.height);
+
+        // Draw detection boxes
+        objects.forEach((obj, index) => {
+            this.drawDetectionBoxOnCanvas(this.fullscreenContext, obj, index);
+        });
+
+        // Update fullscreen stats
+        this.updateFullscreenStats();
+    }
+
+    /**
+     * Draw detection box on specific canvas context
+     * @param {CanvasRenderingContext2D} context - Canvas context
+     * @param {Object} detection - Detection object
+     * @param {number} index - Detection index for color
+     * @private
+     */
+    drawDetectionBoxOnCanvas(context, detection, index) {
+        const [x1, y1, x2, y2] = detection.bbox;
+        const width = x2 - x1;
+        const height = y2 - y1;
+
+        // Color palette for different detections
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+        const color = colors[index % colors.length];
+
+        // Draw bounding box with thicker lines for better visibility
+        context.strokeStyle = color;
+        context.lineWidth = 4;
+        context.strokeRect(x1, y1, width, height);
+
+        // Draw label background
+        const label = `${detection.class_name} ${(detection.confidence * 100).toFixed(0)}%`;
+        context.font = 'bold 18px Arial';
+        const textMetrics = context.measureText(label);
+        const textWidth = textMetrics.width;
+
+        context.fillStyle = color;
+        context.fillRect(x1, y1 - 30, textWidth + 12, 30);
+
+        // Draw label text
+        context.fillStyle = 'white';
+        context.fillText(label, x1 + 6, y1 - 8);
+    }
+
+    /**
+     * Update fullscreen statistics overlay
+     * @private
+     */
+    updateFullscreenStats() {
+        if (!this.isFullscreen) return;
+
+        const infoOverlay = document.querySelector('.fullscreen-info');
+        if (infoOverlay) {
+            const statsHtml = `
+                <div style="display: flex; gap: 30px; color: white; font-size: 14px; font-weight: 500;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span>Objects:</span>
+                        <strong style="color: #00ff00;">${this.detectionStats.objectCount}</strong>
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span>FPS:</span>
+                        <strong style="color: #00ff00;">${parseInt(document.getElementById('processingFps')?.value || '3')}</strong>
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span>Latency:</span>
+                        <strong style="color: #00ff00;">${Math.round(this.detectionStats.averageLatency)}ms</strong>
+                    </span>
+                </div>
+            `;
+            infoOverlay.innerHTML = statsHtml;
         }
     }
 
@@ -976,7 +1319,7 @@ class ComputerVisionAnalyzer {
     }
 
     /**
-     * Update live statistics display
+     * FIXED: Update live statistics display with correct FPS
      * @private
      */
     updateLiveStatsDisplay() {
@@ -989,6 +1332,7 @@ class ComputerVisionAnalyzer {
         if (latencyEl) latencyEl.textContent = Math.round(this.detectionStats.averageLatency) + 'ms';
 
         if (fpsEl) {
+            // Show selected processing rate, not calculated FPS
             const selectedFps = parseInt(document.getElementById('processingFps')?.value || '3');
             fpsEl.textContent = selectedFps;
         }
@@ -1105,6 +1449,7 @@ class ComputerVisionAnalyzer {
      */
     stopDetection() {
         this.isDetecting = false;
+        this.isProcessingFrame = false; // Reset processing flag
 
         if (this.detectionInterval) {
             clearInterval(this.detectionInterval);
@@ -1276,10 +1621,6 @@ class ComputerVisionAnalyzer {
     }
 
     /**
-     * Utility functions for file validation and formatting
-     */
-
-    /**
      * Validate image file
      * @param {File} file - File to validate
      * @param {number} maxSizeMB - Maximum size in MB
@@ -1326,10 +1667,6 @@ class ComputerVisionAnalyzer {
 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-
-    /**
-     * UI State Management Methods
-     */
 
     /**
      * Show image loading state
@@ -1447,10 +1784,6 @@ class ComputerVisionAnalyzer {
             progressText.textContent = 'Analysis complete!';
         }
     }
-
-    /**
-     * Message display methods
-     */
 
     /**
      * Show success message
@@ -2039,7 +2372,9 @@ class ComputerVisionAnalyzer {
             cameraActive: !!this.cameraStream,
             detectingActive: this.isDetecting,
             videoLoaded: !!this.currentVideo,
-            detectionLogCount: this.detectionLog.length
+            detectionLogCount: this.detectionLog.length,
+            isProcessingFrame: this.isProcessingFrame,
+            averageLatency: this.detectionStats.averageLatency
         };
     }
 
