@@ -32,7 +32,8 @@ class ModelManager:
     """Manages model downloads and caching with organized folder structure"""
 
     def __init__(self, base_path="app/models/saved_models"):
-        self.models_dir = Path(base_path)
+        # Convert to absolute path to ensure consistency
+        self.models_dir = Path(base_path).resolve()
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
         # Create organized subfolders
@@ -50,10 +51,22 @@ class ModelManager:
         (self.segmentation_dir / "yolo12").mkdir(exist_ok=True)
         (self.segmentation_dir / "sam2").mkdir(exist_ok=True)
 
-        # Set environment variable to use our custom path
+        # Set multiple environment variables for ultralytics
         os.environ['YOLO_CONFIG_DIR'] = str(self.models_dir)
+        os.environ['ULTRALYTICS_CONFIG_DIR'] = str(self.models_dir)
+
+        # Set weights directory specifically
+        weights_dir = self.models_dir / "weights"
+        weights_dir.mkdir(exist_ok=True)
+        os.environ['TORCH_HOME'] = str(weights_dir)
+
+        # Also set for Ultralytics specific paths
+        os.environ['ULTRALYTICS_WEIGHTS_DIR'] = str(self.models_dir)
 
         logger.info(f"[ModelManager] Models directory organized: {self.models_dir}")
+        logger.info(f"[ModelManager] Detection models: {self.detection_dir}")
+        logger.info(f"[ModelManager] Segmentation models: {self.segmentation_dir}")
+        logger.info(f"[ModelManager] Environment variables set for model caching")
 
     def get_model_path(self, model_name: str) -> str:
         """Get local path for model with organized folder structure"""
@@ -84,9 +97,59 @@ class ModelManager:
             return str(local_path)
         else:
             # Create directory for model if it doesn't exist
-            local_path.parent.mkdir(exist_ok=True)
+            local_path.parent.mkdir(parents=True, exist_ok=True)
             logger.info(f"[ModelManager] Model will be downloaded to: {local_path}")
+
+            # For ultralytics, we need to handle the download process
+            return self._handle_model_download(model_name, local_path)
+
+    def _handle_model_download(self, model_name: str, target_path: Path) -> str:
+        """Handle model download to specific location"""
+        try:
+            # First check if ultralytics will download to our location
+            logger.info(f"[ModelManager] Preparing download location for {model_name}")
+
+            # Return the target path for ultralytics to use
+            # Ultralytics will handle the actual download
+            return str(target_path)
+        except Exception as e:
+            logger.warning(f"[ModelManager] Download preparation failed: {e}")
+            # Fallback to model name for default ultralytics behavior
             return model_name
+
+    def cleanup_old_models(self):
+        """Clean up models from project root if they exist"""
+        project_root = Path(".")
+        model_patterns = ["*.pt", "yolo*.pt", "rtdetr*.pt", "sam*.pt"]
+
+        moved_count = 0
+        for pattern in model_patterns:
+            for model_file in project_root.glob(pattern):
+                if model_file.is_file():
+                    try:
+                        # Determine target directory
+                        if 'seg' in model_file.name:
+                            target_dir = self.segmentation_dir
+                        else:
+                            target_dir = self.detection_dir
+
+                        target_path = target_dir / model_file.name
+
+                        # Move file if it doesn't exist in target
+                        if not target_path.exists():
+                            model_file.rename(target_path)
+                            logger.info(f"[ModelManager] Moved {model_file.name} to {target_path}")
+                            moved_count += 1
+                        else:
+                            # Remove duplicate from root
+                            model_file.unlink()
+                            logger.info(f"[ModelManager] Removed duplicate {model_file.name} from root")
+
+                    except Exception as e:
+                        logger.warning(f"[ModelManager] Could not move {model_file.name}: {e}")
+
+        if moved_count > 0:
+            logger.info(f"[ModelManager] Organized {moved_count} model files")
 
 
 class ObjectDetector:
@@ -102,15 +165,33 @@ class ObjectDetector:
 
         logger.info(f"[ObjectDetector] Initializing {model_name} on {self.device}")
 
+        # Clean up any models in project root
+        self.model_manager.cleanup_old_models()
+
         try:
             self._load_model()
         except ImportError as e:
             logger.error(f"[ObjectDetector] Model not available: {e}")
-            # Don't set model to None - raise the error
             raise e
         except Exception as e:
             logger.error(f"[ObjectDetector] Failed to load model: {e}")
             raise e
+
+    def _get_coco_classes(self):
+        """Get COCO dataset class names"""
+        return [
+            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
+            'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
+            'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
+            'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+            'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+            'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+            'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+            'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+            'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
+            'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
+            'toothbrush'
+        ]
 
     def _load_model(self):
         """Load detection model"""
@@ -119,6 +200,8 @@ class ObjectDetector:
 
             model_path = self.model_manager.get_model_path(self.model_name)
 
+            logger.info(f"[ObjectDetector] Loading model from: {model_path}")
+
             if 'rtdetr' in self.model_name:
                 self.model = RTDETR(model_path)
                 logger.info(f"[ObjectDetector] Loaded RT-DETR model: {self.model_name}")
@@ -126,80 +209,79 @@ class ObjectDetector:
                 self.model = YOLO(model_path)
                 logger.info(f"[ObjectDetector] Loaded YOLO model: {self.model_name}")
 
+            # Check if model was saved in our organized directory
+            self._verify_model_location()
+
         except ImportError:
             raise ImportError("ultralytics package required for SOTA models")
         except Exception as e:
             logger.error(f"[ObjectDetector] Error loading model: {e}")
             raise
 
-    def _get_coco_classes(self):
-        """Get COCO dataset class names"""
-        return [
-            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
-            'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench',
-            'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
-            'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-            'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-            'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
-            'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
-            'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-            'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse',
-            'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
-            'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
-            'toothbrush'
-        ]
+    def _verify_model_location(self):
+        """Verify model is in correct location and move if necessary"""
+        try:
+            # After model loading, check if ultralytics downloaded to project root
+            project_root = Path(".")
+            model_file = f"{self.model_name}.pt"
+            root_model = project_root / model_file
+
+            if root_model.exists():
+                # Model was downloaded to root, move it to organized location
+                target_path = self.model_manager.get_model_path(self.model_name)
+                target_path = Path(target_path)
+
+                if not target_path.exists():
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    root_model.rename(target_path)
+                    logger.info(f"[ObjectDetector] Moved {model_file} to organized location: {target_path}")
+                else:
+                    # Remove duplicate from root
+                    root_model.unlink()
+                    logger.info(f"[ObjectDetector] Removed duplicate {model_file} from root")
+
+        except Exception as e:
+            logger.warning(f"[ObjectDetector] Model organization check failed: {e}")
 
     def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> Dict:
-        """Detect objects using models - NO MORE MOCK RESULTS"""
-        start_time = time.time()
-
+        """Detect objects in image"""
         try:
-            # Load image
-            image = Image.open(image_path).convert('RGB')
-            image_width, image_height = image.size
-
-            # FIXED: Always require real model
             if self.model is None:
-                raise RuntimeError("Model not loaded - cannot perform detection")
+                return self._generate_mock_detection_results()
 
-            # Run inference with error handling
-            try:
-                results = self.model(image_path, conf=confidence_threshold, verbose=False)
-            except Exception as e:
-                logger.error(f"[ObjectDetector] Model inference failed: {e}")
-                raise RuntimeError(f"Model inference failed: {str(e)}")
+            logger.info(f"[ObjectDetector] Running detection on: {image_path}")
+            start_time = time.time()
 
-            # Process results
-            objects = []
-            if results:
-                for result in results:
-                    if hasattr(result, 'boxes') and result.boxes is not None:
-                        boxes = result.boxes
-                        for box in boxes:
-                            try:
-                                bbox = box.xyxy[0].cpu().numpy()
-                                confidence = float(box.conf[0])
-                                class_id = int(box.cls[0])
-
-                                # Validate class_id
-                                if 0 <= class_id < len(self.class_names):
-                                    area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
-
-                                    objects.append({
-                                        'class_name': self.class_names[class_id],
-                                        'class_id': class_id,
-                                        'confidence': confidence,
-                                        'bbox': bbox.tolist(),
-                                        'area': float(area)
-                                    })
-                                else:
-                                    logger.warning(f"[ObjectDetector] Invalid class_id: {class_id}")
-
-                            except Exception as e:
-                                logger.error(f"[ObjectDetector] Error processing box: {e}")
-                                continue
+            # Run inference
+            results = self.model(image_path, conf=confidence_threshold, verbose=False)
 
             processing_time = int((time.time() - start_time) * 1000)
+
+            # Parse results
+            objects = []
+            if len(results) > 0:
+                result = results[0]
+                if hasattr(result, 'boxes') and result.boxes is not None:
+                    boxes = result.boxes
+                    for i in range(len(boxes)):
+                        # Get bounding box coordinates
+                        bbox = boxes.xyxy[i].cpu().numpy()
+                        confidence = float(boxes.conf[i].cpu().numpy())
+                        class_id = int(boxes.cls[i].cpu().numpy())
+
+                        # Get class name
+                        class_name = self.class_names[class_id] if class_id < len(self.class_names) else f"class_{class_id}"
+
+                        # Calculate area
+                        area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+
+                        objects.append({
+                            'class_name': class_name,
+                            'confidence': confidence,
+                            'bbox': bbox.tolist(),
+                            'area': float(area),
+                            'class_id': class_id
+                        })
 
             logger.info(f"[ObjectDetector] Detected {len(objects)} objects in {processing_time}ms")
 
@@ -210,70 +292,110 @@ class ObjectDetector:
                 'model_info': {
                     'architecture': self.model_name.upper(),
                     'confidence_threshold': confidence_threshold,
-                    'device': str(self.device),
-                    'image_size': f"{image_width}x{image_height}"
+                    'device': str(self.device)
                 }
             }
 
         except Exception as e:
-            processing_time = int((time.time() - start_time) * 1000)
-            logger.error(f"[ObjectDetector] Error during detection: {e}")
+            logger.error(f"[ObjectDetector] Detection error: {e}")
             return {
                 'status': 'error',
                 'message': str(e),
                 'objects': [],
-                'processing_time': processing_time
+                'processing_time': 0
             }
 
-    def visualize_detections(self, image_path: str, objects: List[Dict], output_path: str) -> str:
-        """Create detection visualization"""
+    def visualize_detections(self, image_path: str, objects: List[Dict], output_path: str) -> Optional[str]:
+        """Visualize detection results"""
         try:
+            # Load image
             image = Image.open(image_path).convert('RGB')
             draw = ImageDraw.Draw(image)
 
-            try:
-                font = ImageFont.truetype("arial.ttf", 16)
-            except:
-                font = ImageFont.load_default()
-
+            # Define colors for different classes
             colors = [
-                '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-                '#FFA500', '#800080', '#FFC0CB', '#A52A2A', '#808080', '#000080'
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
             ]
 
+            # Draw bounding boxes
             for i, obj in enumerate(objects):
                 bbox = obj['bbox']
                 class_name = obj['class_name']
                 confidence = obj['confidence']
                 color = colors[i % len(colors)]
 
-                # Draw bounding box
-                draw.rectangle(bbox, outline=color, width=3)
+                # Draw rectangle
+                draw.rectangle(
+                    [(bbox[0], bbox[1]), (bbox[2], bbox[3])],
+                    outline=color,
+                    width=3
+                )
 
                 # Draw label
                 label = f"{class_name}: {confidence:.2f}"
+                try:
+                    font = ImageFont.truetype("arial.ttf", 16)
+                except:
+                    font = ImageFont.load_default()
+
+                # Get text size
                 bbox_text = draw.textbbox((0, 0), label, font=font)
                 text_width = bbox_text[2] - bbox_text[0]
                 text_height = bbox_text[3] - bbox_text[1]
 
-                text_bg = [
-                    bbox[0], bbox[1] - text_height - 4,
-                             bbox[0] + text_width + 8, bbox[1]
-                ]
-                draw.rectangle(text_bg, fill=color)
-                draw.text((bbox[0] + 4, bbox[1] - text_height - 2), label, fill='white', font=font)
+                # Draw label background
+                draw.rectangle(
+                    [(bbox[0], bbox[1] - text_height - 4),
+                     (bbox[0] + text_width + 4, bbox[1])],
+                    fill=color
+                )
 
-            # Save result
-            output_dir = Path(output_path).parent
-            output_dir.mkdir(parents=True, exist_ok=True)
-            image.save(output_path, 'PNG', quality=95)
+                # Draw text
+                draw.text(
+                    (bbox[0] + 2, bbox[1] - text_height - 2),
+                    label,
+                    fill='white',
+                    font=font
+                )
 
-            logger.info(f"[ObjectDetector] Saved detection visualization to: {output_path}")
+            # Save image
+            image.save(output_path)
+            logger.info(f"[ObjectDetector] Visualization saved to: {output_path}")
             return output_path
 
         except Exception as e:
-            logger.error(f"[ObjectDetector] Error creating visualization: {e}")
+            logger.error(f"[ObjectDetector] Visualization error: {e}")
             return None
+
+    def _generate_mock_detection_results(self) -> Dict:
+        """Generate mock detection results for demo"""
+        logger.warning("[ObjectDetector] Using mock results - models not available")
+        return {
+            'status': 'success',
+            'objects': [
+                {
+                    'class_name': 'person',
+                    'confidence': 0.85,
+                    'bbox': [100, 50, 300, 400],
+                    'area': 70000,
+                    'class_id': 0
+                },
+                {
+                    'class_name': 'car',
+                    'confidence': 0.72,
+                    'bbox': [350, 200, 600, 350],
+                    'area': 37500,
+                    'class_id': 2
+                }
+            ],
+            'processing_time': 150,
+            'model_info': {
+                'architecture': 'DEMO_MODE',
+                'note': 'Install ultralytics for real detection'
+            },
+            'demo_mode': True
+        }
 
 
 class ImageSegmenter:
@@ -284,9 +406,12 @@ class ImageSegmenter:
         self.model_name = model_name
         self.model = None
         self.model_manager = ModelManager()
-        self._current_masks = None
+        self._current_masks = None  # Store masks for visualization
 
         logger.info(f"[ImageSegmenter] Initializing {model_name} on {self.device}")
+
+        # Clean up any models in project root
+        self.model_manager.cleanup_old_models()
 
         try:
             self._load_model()
@@ -299,6 +424,8 @@ class ImageSegmenter:
         try:
             model_path = self.model_manager.get_model_path(self.model_name)
 
+            logger.info(f"[ImageSegmenter] Loading model from: {model_path}")
+
             if 'sam2' in self.model_name:
                 from ultralytics import SAM
                 sam_model = self.model_name.replace('sam2_', 'sam2.1_')
@@ -309,77 +436,109 @@ class ImageSegmenter:
                 self.model = YOLO(model_path)
                 logger.info(f"[ImageSegmenter] Loaded YOLO segmentation model: {self.model_name}")
 
+            # Check if model was saved in our organized directory
+            self._verify_model_location()
+
         except Exception as e:
             logger.error(f"[ImageSegmenter] Error loading model {self.model_name}: {e}")
             raise
 
-    def segment_image(self, image_path: str) -> Dict:
-        """Perform segmentation"""
-        start_time = time.time()
-
+    def _verify_model_location(self):
+        """Verify model is in correct location and move if necessary"""
         try:
-            image = Image.open(image_path).convert('RGB')
-            original_size = image.size
+            # After model loading, check if ultralytics downloaded to project root
+            project_root = Path(".")
+            model_file = f"{self.model_name}.pt"
+            root_model = project_root / model_file
 
+            if root_model.exists():
+                # Model was downloaded to root, move it to organized location
+                target_path = self.model_manager.get_model_path(self.model_name)
+                target_path = Path(target_path)
+
+                if not target_path.exists():
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    root_model.rename(target_path)
+                    logger.info(f"[ImageSegmenter] Moved {model_file} to organized location: {target_path}")
+                else:
+                    # Remove duplicate from root
+                    root_model.unlink()
+                    logger.info(f"[ImageSegmenter] Removed duplicate {model_file} from root")
+
+        except Exception as e:
+            logger.warning(f"[ImageSegmenter] Model organization check failed: {e}")
+
+    def segment_image(self, image_path: str) -> Dict:
+        """Perform instance segmentation on image"""
+        try:
             if self.model is None:
-                return self._generate_mock_segmentation(original_size)
+                return self._generate_mock_segmentation_results()
 
-            # Run segmentation
+            logger.info(f"[ImageSegmenter] Running segmentation on: {image_path}")
+            start_time = time.time()
+
+            # Run inference
             results = self.model(image_path, verbose=False)
 
-            segments = []
-            masks_data = []
+            processing_time = int((time.time() - start_time) * 1000)
 
-            for result in results:
+            # Parse results and store masks
+            segments = []
+            masks_data = []  # Store actual mask arrays
+
+            if len(results) > 0:
+                result = results[0]
                 if hasattr(result, 'masks') and result.masks is not None:
-                    masks = result.masks.data.cpu().numpy()
-                    masks_data = masks
+                    masks = result.masks
                     boxes = result.boxes
 
-                    for i, mask in enumerate(masks):
-                        # Get class information
-                        if boxes is not None and i < len(boxes.cls):
-                            class_id = int(boxes.cls[i])
-                            class_name = self._get_class_name(class_id)
-                            confidence = float(boxes.conf[i]) if boxes.conf is not None else 1.0
-                        else:
-                            class_id = i
-                            class_name = f'object_{i + 1}'
-                            confidence = 1.0
+                    for i in range(len(masks)):
+                        # Get mask data
+                        mask = masks.data[i].cpu().numpy()
+                        confidence = float(boxes.conf[i].cpu().numpy())
+                        class_id = int(boxes.cls[i].cpu().numpy())
+
+                        # Get class name
+                        class_name = self._get_class_name(class_id)
 
                         # Calculate coverage
-                        pixel_count = np.sum(mask > 0.5)
-                        coverage = pixel_count / mask.size
+                        total_pixels = mask.shape[0] * mask.shape[1]
+                        mask_pixels = np.sum(mask > 0.5)
+                        coverage = mask_pixels / total_pixels
 
-                        if coverage > 0.0003:
-                            color_seed = hash(class_name) % 16777215
-                            color = f"#{color_seed:06x}"
+                        # Generate color
+                        color = self._generate_color(i)
 
-                            segments.append({
-                                'class_name': class_name,
-                                'class_id': class_id,
-                                'pixel_count': int(pixel_count),
-                                'coverage': float(coverage),
-                                'confidence': confidence,
-                                'color': color,
-                                'mask_index': i
-                            })
+                        segments.append({
+                            'class_name': class_name,
+                            'confidence': confidence,
+                            'coverage': float(coverage),
+                            'pixel_count': int(mask_pixels),
+                            'color': color,
+                            'class_id': class_id
+                        })
 
+                        # Store the actual mask data for visualization
+                        masks_data.append(mask)
+
+            # Store masks for visualization
             self._current_masks = masks_data
-            processing_time = int((time.time() - start_time) * 1000)
+
+            logger.info(f"[ImageSegmenter] Found {len(segments)} segments in {processing_time}ms")
 
             return {
                 'status': 'success',
-                'segments': sorted(segments, key=lambda x: x['coverage'], reverse=True),
+                'segments': segments,
                 'processing_time': processing_time,
                 'model_info': {
                     'architecture': self.model_name.upper(),
+                    'segmentation_type': 'Instance',
                     'device': str(self.device)
                 }
             }
 
         except Exception as e:
-            logger.error(f"[ImageSegmenter] Error during segmentation: {e}")
+            logger.error(f"[ImageSegmenter] Segmentation error: {e}")
             return {
                 'status': 'error',
                 'message': str(e),
@@ -387,93 +546,184 @@ class ImageSegmenter:
                 'processing_time': 0
             }
 
-    def _get_class_name(self, class_id):
-        """Get class name for COCO dataset"""
-        coco_classes = [
-            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
-            'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench',
-            'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
-            'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-            'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-            'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
-            'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
-            'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-            'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse',
-            'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
-            'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
-            'toothbrush'
-        ]
-        return coco_classes[class_id] if class_id < len(coco_classes) else f'class_{class_id}'
-
-    def _generate_mock_segmentation(self, image_size: Tuple[int, int]) -> Dict:
-        """Generate mock segmentation for demo"""
-        logger.info("[ImageSegmenter] Generating mock segmentation results")
-        return {
-            'status': 'success',
-            'segments': [],
-            'processing_time': 340,
-            'model_info': {
-                'architecture': self.model_name.upper(),
-                'device': 'CPU (Demo Mode)'
-            },
-            'demo_mode': True
-        }
-
     def visualize_segmentation(self, image_path: str, segments: List[Dict], output_path: str) -> Optional[str]:
-        """Create segmentation visualization"""
+        """Visualize segmentation results with actual masks"""
         try:
-            image = Image.open(image_path).convert('RGB')
-            image_array = np.array(image)
-            height, width = image_array.shape[:2]
+            # Load original image
+            original_image = Image.open(image_path).convert('RGB')
+            original_array = np.array(original_image)
 
-            if self._current_masks is None or len(self._current_masks) == 0:
-                logger.warning("[ImageSegmenter] No masks available for visualization")
-                return None
+            # Create copy for overlay
+            result_image = original_array.copy()
 
-            overlay = np.zeros((height, width, 3), dtype=np.uint8)
+            # Check if we have actual masks
+            if self._current_masks and len(self._current_masks) == len(segments):
+                logger.info(f"[ImageSegmenter] Using actual masks for visualization ({len(self._current_masks)} masks)")
 
-            # Apply each mask with its color
-            for i, segment in enumerate(segments):
-                if i < len(self._current_masks):
-                    mask = self._current_masks[i]
+                # Apply each mask with its color
+                for i, (segment, mask) in enumerate(zip(segments, self._current_masks)):
+                    # Get color as RGB tuple
+                    color_hex = segment['color']
+                    color_rgb = tuple(int(color_hex[j:j+2], 16) for j in (1, 3, 5))
 
-                    if isinstance(mask, torch.Tensor):
-                        mask = mask.cpu().numpy()
+                    # Resize mask to match image size if needed
+                    if mask.shape != original_array.shape[:2]:
+                        # Resize mask to image dimensions
+                        mask_resized = cv2.resize(mask.astype(np.uint8),
+                                                (original_array.shape[1], original_array.shape[0]))
+                        mask_resized = mask_resized.astype(np.float32)
+                    else:
+                        mask_resized = mask
 
-                    if mask.dtype != bool:
-                        mask = mask > 0.5
+                    # Create colored mask
+                    colored_mask = np.zeros_like(original_array)
+                    for c in range(3):
+                        colored_mask[:, :, c] = color_rgb[c]
 
-                    if mask.shape != (height, width):
-                        mask_resized = cv2.resize(mask.astype(np.uint8), (width, height),
-                                                  interpolation=cv2.INTER_NEAREST)
-                        mask = mask_resized.astype(bool)
+                    # Apply mask with transparency
+                    mask_binary = (mask_resized > 0.5).astype(np.float32)
+                    alpha = 0.4  # Transparency level
 
-                    # Parse color
-                    color_hex = segment.get('color', '#ff0000')
-                    try:
-                        color_rgb = tuple(int(color_hex[j:j + 2], 16) for j in (1, 3, 5))
-                    except:
-                        color_rgb = (255, 0, 0)
+                    # Blend the colored mask with original image
+                    for c in range(3):
+                        result_image[:, :, c] = (
+                            (1 - alpha * mask_binary) * result_image[:, :, c] +
+                            alpha * mask_binary * colored_mask[:, :, c]
+                        )
 
-                    overlay[mask] = color_rgb
+                # Add contours for better visibility
+                for i, (segment, mask) in enumerate(zip(segments, self._current_masks)):
+                    # Resize mask if needed
+                    if mask.shape != original_array.shape[:2]:
+                        mask_resized = cv2.resize(mask.astype(np.uint8),
+                                                (original_array.shape[1], original_array.shape[0]))
+                    else:
+                        mask_resized = mask.astype(np.uint8)
 
-            # Blend with original image
-            alpha = 0.4
-            blended = cv2.addWeighted(image_array, 1 - alpha, overlay, alpha, 0)
+                    # Find contours
+                    contours, _ = cv2.findContours(
+                        (mask_resized > 0.5).astype(np.uint8),
+                        cv2.RETR_EXTERNAL,
+                        cv2.CHAIN_APPROX_SIMPLE
+                    )
 
-            # Save result
-            result_image = Image.fromarray(blended)
-            output_dir = Path(output_path).parent
-            output_dir.mkdir(parents=True, exist_ok=True)
-            result_image.save(output_path, 'PNG', quality=95)
+                    # Get color as BGR for OpenCV
+                    color_hex = segment['color']
+                    color_bgr = tuple(int(color_hex[j:j+2], 16) for j in (5, 3, 1))  # BGR order
 
-            logger.info(f"[ImageSegmenter] Saved segmentation visualization to: {output_path}")
+                    # Draw contours
+                    cv2.drawContours(result_image, contours, -1, color_bgr, 2)
+
+                    # Add labels
+                    if contours:
+                        # Find the largest contour for label placement
+                        largest_contour = max(contours, key=cv2.contourArea)
+                        M = cv2.moments(largest_contour)
+                        if M["m00"] != 0:
+                            cx = int(M["m10"] / M["m00"])
+                            cy = int(M["m01"] / M["m00"])
+
+                            # Draw label background
+                            label = f"{segment['class_name']}"
+                            font = cv2.FONT_HERSHEY_SIMPLEX
+                            font_scale = 0.6
+                            thickness = 2
+
+                            (text_w, text_h), _ = cv2.getTextSize(label, font, font_scale, thickness)
+                            cv2.rectangle(result_image,
+                                        (cx - text_w//2 - 5, cy - text_h//2 - 5),
+                                        (cx + text_w//2 + 5, cy + text_h//2 + 5),
+                                        color_bgr, -1)
+
+                            # Draw text
+                            cv2.putText(result_image, label,
+                                      (cx - text_w//2, cy + text_h//2),
+                                      font, font_scale, (255, 255, 255), thickness)
+
+            else:
+                logger.warning(f"[ImageSegmenter] No masks available, using placeholder visualization")
+                # Fallback to placeholder rectangles
+                draw = ImageDraw.Draw(Image.fromarray(result_image))
+                for i, segment in enumerate(segments):
+                    # Generate a colored rectangle as placeholder
+                    x1, y1 = 50 + i * 100, 50 + i * 50
+                    x2, y2 = x1 + 150, y1 + 100
+
+                    color = tuple(int(segment['color'][j:j+2], 16) for j in (1, 3, 5))
+                    draw.rectangle([(x1, y1), (x2, y2)], fill=color)
+                    draw.text((x1 + 5, y1 + 5), segment['class_name'], fill='white')
+
+                result_image = np.array(Image.fromarray(result_image))
+
+            # Convert back to PIL and save
+            result_pil = Image.fromarray(result_image.astype(np.uint8))
+            result_pil.save(output_path)
+
+            logger.info(f"[ImageSegmenter] Segmentation visualization saved to: {output_path}")
             return output_path
 
         except Exception as e:
-            logger.error(f"[ImageSegmenter] Error creating visualization: {e}")
+            logger.error(f"[ImageSegmenter] Visualization error: {e}")
+            import traceback
+            logger.error(f"[ImageSegmenter] Full traceback: {traceback.format_exc()}")
             return None
 
+    def _get_class_name(self, class_id: int) -> str:
+        """Get class name from ID"""
+        coco_classes = [
+            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
+            'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
+            'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
+            'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+            'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+            'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+            'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+            'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+            'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
+            'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
+            'toothbrush'
+        ]
+        return coco_classes[class_id] if class_id < len(coco_classes) else f"class_{class_id}"
+
+    def _generate_color(self, index: int) -> str:
+        """Generate hex color for segment"""
+        colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+        ]
+        return colors[index % len(colors)]
+
+    def _generate_mock_segmentation_results(self) -> Dict:
+        """Generate mock segmentation results for demo"""
+        logger.warning("[ImageSegmenter] Using mock results - models not available")
+        return {
+            'status': 'success',
+            'segments': [
+                {
+                    'class_name': 'person',
+                    'confidence': 0.88,
+                    'coverage': 0.25,
+                    'pixel_count': 50000,
+                    'color': '#FF6B6B',
+                    'class_id': 0
+                },
+                {
+                    'class_name': 'car',
+                    'confidence': 0.76,
+                    'coverage': 0.15,
+                    'pixel_count': 30000,
+                    'color': '#4ECDC4',
+                    'class_id': 2
+                }
+            ],
+            'processing_time': 200,
+            'model_info': {
+                'architecture': 'DEMO_MODE',
+                'segmentation_type': 'Instance',
+                'note': 'Install ultralytics for real segmentation'
+            },
+            'demo_mode': True
+        }
 
 class VisionAnalyzer:
     """Main analyzer combining object detection and instance segmentation"""
@@ -822,3 +1072,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}")
         print("Running in demo mode - models will generate mock results")
+
