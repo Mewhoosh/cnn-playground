@@ -40,10 +40,28 @@ class MNISTCanvas {
         this.setupEventListeners();
         this.setupBrushControls();
         this.initializeConfidenceBars();
+        this.setupImageModalDelegation();
 
         console.log('MNIST Canvas initialized');
     }
+    setupImageModalDelegation() {
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.tagName === 'IMG' &&
+            (target.classList.contains('gradcam-image') ||
+             target.classList.contains('layer-image') ||
+             target.hasAttribute('data-modal-src'))) {
 
+            e.preventDefault();
+            e.stopPropagation();
+
+            const src = target.getAttribute('data-modal-src') || target.src;
+            if (window.openImageModal) {
+                window.openImageModal(src);
+            }
+        }
+    });
+}
     setupCanvas() {
         // Set canvas properties
         this.canvas.style.position = 'relative';
@@ -838,6 +856,7 @@ class MNISTCanvas {
     isCurrentlyPredicting() {
         return this.isRequesting;
     }
+
 }
 
 window.MNISTCanvas = MNISTCanvas;

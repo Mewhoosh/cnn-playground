@@ -21,14 +21,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ImprovedLeNet(nn.Module):
+class MNISTNet(nn.Module):
     """
-    Enhanced LeNet-5 with BatchNorm and Dropout for better accuracy
+    CNN architecture for MNIST digit classification
+    Features: 3 conv layers, BatchNorm, Dropout, MaxPooling
     Same architecture as in training notebook
     """
 
     def __init__(self, num_classes=10):
-        super(ImprovedLeNet, self).__init__()
+        super(MNISTNet, self).__init__()
 
         # Feature extraction
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5, padding=2)
@@ -45,7 +46,7 @@ class ImprovedLeNet(nn.Module):
         self.fc1 = nn.Linear(128 * 3 * 3, 256)
         self.fc2 = nn.Linear(256, 128)
         self.fc3 = nn.Linear(128, num_classes)
-        self.dropout_fc = nn.Dropout(0.5)
+        self.dropout_fc = nn.Dropout(0.3)
 
     def forward(self, x):
         # Conv layers
@@ -76,7 +77,7 @@ class MNISTClassifier:
         logger.info(f"Initializing MNIST classifier on {self.device}")
 
         # Initialize model
-        self.model = ImprovedLeNet()
+        self.model = MNISTNet()
         self.model.to(self.device)
 
         # Resolve and load model
@@ -129,7 +130,7 @@ class MNISTClassifier:
         """Load pre-trained model - PRODUCTION ONLY, NO TRAINING"""
         try:
             logger.info(f"Loading pre-trained model from: {self.model_path}")
-            checkpoint = torch.load(self.model_path, map_location=self.device)
+            checkpoint = torch.load(self.model_path, map_location=self.device, weights_only=True)
 
             # Handle different checkpoint formats
             if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
@@ -141,7 +142,7 @@ class MNISTClassifier:
                 training_date = checkpoint.get('training_date', 'Unknown')
                 architecture = checkpoint.get('architecture', 'Unknown')
 
-                logger.info(f"✅ Model loaded successfully!")
+                logger.info("Model loaded successfully!")
                 logger.info(f"   Architecture: {architecture}")
                 logger.info(f"   Test Accuracy: {accuracy}")
                 logger.info(f"   Training Date: {training_date}")
@@ -149,13 +150,13 @@ class MNISTClassifier:
             elif isinstance(checkpoint, dict):
                 # Assume it's just the state dict
                 self.model.load_state_dict(checkpoint)
-                logger.info("✅ Model state dict loaded successfully!")
+                logger.info("Model state dict loaded successfully!")
 
             else:
                 raise ValueError("Unsupported model format")
 
         except Exception as e:
-            raise RuntimeError(f"❌ Failed to load model from {self.model_path}: {e}")
+            raise RuntimeError(f"Failed to load model from {self.model_path}: {e}")
 
     def preprocess_canvas_image(self, base64_data):
         """
@@ -289,7 +290,7 @@ class MNISTClassifier:
         trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
 
         return {
-            'architecture': 'Improved LeNet-5',
+            'architecture': 'MNISTNet CNN',
             'total_parameters': total_params,
             'trainable_parameters': trainable_params,
             'input_size': '28x28 grayscale',
@@ -329,9 +330,9 @@ if __name__ == "__main__":
     print("Testing MNIST Classifier...")
     try:
         classifier = MNISTClassifier()
-        print("✅ Model loaded successfully!")
+        print("Model loaded successfully!")
         print("Model Info:", classifier.get_model_info())
-        print("🚀 Classifier ready for predictions!")
+        print("Classifier ready for predictions!")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         print("\nPlease ensure your trained model is in the models/ directory.")

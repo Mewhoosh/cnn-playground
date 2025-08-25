@@ -9,13 +9,13 @@
         <h1 class="hero-title">CNN Playground</h1>
         <p class="hero-subtitle">Interactive Deep Learning Exploration</p>
         <p class="hero-description">
-            Explore convolutional neural networks, train your own models, and understand
-            how deep learning works through hands-on experimentation.
+            Explore convolutional neural networks through hands-on experimentation.
+            Upload images, draw digits, detect objects, and understand how deep learning works in real-time.
         </p>
 
         <div class="hero-buttons">
             <a href="/imagenet" class="btn btn-hero">ImageNet Classification</a>
-            <a href="/mnist" class="btn btn-hero">MNIST Recognition</a>
+            <a href="/mnist" class="btn btn-hero">MNIST Playground</a>
             <a href="/vision" class="btn btn-hero">Computer Vision</a>
         </div>
     </div>
@@ -25,11 +25,12 @@
         <div class="feature-card" onclick="window.location.href='/imagenet'">
             <div class="feature-icon">IMG</div>
             <h3>ImageNet Classification</h3>
-            <p>Upload any image and see how ResNet50 classifies it. Explore Grad-CAM attention maps and CNN feature visualizations.</p>
+            <p>Upload any image and see how ResNet50 classifies it among 1000 categories. Explore Grad-CAM attention maps to understand where the network focuses, and visualize feature activations across different layers.</p>
             <div class="feature-highlights">
-                <span class="highlight">Real-time prediction</span>
-                <span class="highlight">Grad-CAM visualization</span>
-                <span class="highlight">Feature maps explorer</span>
+                <span class="highlight">ResNet50 Classification</span>
+                <span class="highlight">Grad-CAM Visualization</span>
+                <span class="highlight">Feature Map Explorer</span>
+                <span class="highlight">Top-K Predictions</span>
             </div>
             <div class="feature-action">
                 <span class="btn-text">Upload Image →</span>
@@ -38,12 +39,13 @@
 
         <div class="feature-card" onclick="window.location.href='/mnist'">
             <div class="feature-icon">DRAW</div>
-            <h3>MNIST Playground</h3>
-            <p>Draw digits on an interactive canvas and watch neural networks predict in real-time. Train your own models and see live progress.</p>
+            <h3>MNIST Digit Recognition</h3>
+            <p>Draw digits (0-9) on an interactive canvas and watch a trained CNN predict in real-time. See confidence scores for each digit and understand how the network processes your handwriting with live preprocessing visualization.</p>
             <div class="feature-highlights">
-                <span class="highlight">Interactive canvas</span>
-                <span class="highlight">Live training</span>
-                <span class="highlight">Real-time prediction</span>
+                <span class="highlight">Interactive Drawing Canvas</span>
+                <span class="highlight">Real-time Prediction</span>
+                <span class="highlight">Enhanced LeNet-5</span>
+                <span class="highlight">98.5% Accuracy</span>
             </div>
             <div class="feature-action">
                 <span class="btn-text">Start Drawing →</span>
@@ -53,125 +55,72 @@
         <div class="feature-card" onclick="window.location.href='/vision'">
             <div class="feature-icon">VISION</div>
             <h3>Computer Vision</h3>
-            <p>Advanced object detection, instance segmentation, and video processing using state-of-the-art YOLO and SAM models.</p>
+            <p>Advanced object detection and segmentation using state-of-the-art models. Choose between image analysis, video processing, or live camera detection with both server-side PyTorch and client-side TensorFlow.js models.</p>
             <div class="feature-highlights">
-                <span class="highlight">Object detection</span>
-                <span class="highlight">Instance segmentation</span>
-                <span class="highlight">Video processing</span>
+                <span class="highlight">YOLO Object Detection</span>
+                <span class="highlight">Instance Segmentation</span>
+                <span class="highlight">Video Processing</span>
+                <span class="highlight">Live Camera Detection</span>
             </div>
             <div class="feature-action">
-                <span class="btn-text">Analyze Images →</span>
-            </div>
-        </div>
-
-        <div class="feature-card coming-soon">
-            <div class="feature-icon">SEGMENT</div>
-            <h3>Advanced Segmentation</h3>
-            <p>Segment images at pixel level with advanced models. Understand which pixels belong to which objects in complex scenes.</p>
-            <div class="feature-highlights">
-                <span class="highlight">Pixel-level segmentation</span>
-                <span class="highlight">Semantic understanding</span>
-                <span class="highlight">Advanced models</span>
-            </div>
-            <div class="feature-action">
-                <span class="btn-text coming-soon-text">Coming Soon</span>
+                <span class="btn-text">Detect Objects →</span>
             </div>
         </div>
     </div>
 
-    <!-- Educational Value Section -->
-    <div class="education-section fade-in">
-        <h2>Perfect for Learning</h2>
-        <div class="education-grid">
-            <div class="education-item">
-                <div class="education-icon">CNN</div>
-                <h4>Understand CNNs</h4>
-                <p>See how convolutional layers extract features from images step by step</p>
+    <div class="tech-showcase fade-in">
+    <h2>Technology Stack</h2>
+    <div class="tech-categories">
+        <div class="tech-category">
+            <h4>Backend & API</h4>
+            <div class="tech-items">
+                <span class="tech-tag">Python 3.8+</span>
+                <span class="tech-tag">FastAPI</span>
+                <span class="tech-tag">Uvicorn</span>
+                <span class="tech-tag">PyTorch 2.0+</span>
+                <span class="tech-tag">OpenCV</span>
+                <span class="tech-tag">NumPy</span>
+                <span class="tech-tag">Pillow</span>
             </div>
-            <div class="education-item">
-                <div class="education-icon">FOCUS</div>
-                <h4>Visualize Attention</h4>
-                <p>Grad-CAM shows exactly where neural networks focus their attention</p>
+        </div>
+        <div class="tech-category">
+            <h4>Frontend & UI</h4>
+            <div class="tech-items">
+                <span class="tech-tag">HTML5</span>
+                <span class="tech-tag">CSS3 Variables</span>
+                <span class="tech-tag">JavaScript ES6+</span>
+                <span class="tech-tag">Canvas API</span>
+                <span class="tech-tag">WebRTC</span>
+                <span class="tech-tag">Fetch API</span>
+                <span class="tech-tag">Jinja2</span>
             </div>
-            <div class="education-item">
-                <div class="education-icon">TRAIN</div>
-                <h4>Train Models Live</h4>
-                <p>Watch loss decrease and accuracy improve in real-time training</p>
+        </div>
+        <div class="tech-category">
+            <h4>Neural Networks</h4>
+            <div class="tech-items">
+                <span class="tech-tag">ResNet50</span>
+                <span class="tech-tag">MNISTNet</span>
+                <span class="tech-tag">YOLO11 (n/s/m/l/x)</span>
+                <span class="tech-tag">SAM 2.1</span>
+                <span class="tech-tag">TensorFlow.js</span>
+                <span class="tech-tag">COCO-SSD</span>
+                <span class="tech-tag">Grad-CAM</span>
             </div>
-            <div class="education-item">
-                <div class="education-icon">EXPERIMENT</div>
-                <h4>Hands-on Experiments</h4>
-                <p>Learn by doing with interactive tools and immediate feedback</p>
+        </div>
+        <div class="tech-category">
+            <h4>Processing & Tools</h4>
+            <div class="tech-items">
+                <span class="tech-tag">Real-time Inference</span>
+                <span class="tech-tag">Video Processing</span>
+                <span class="tech-tag">Base64 Encoding</span>
+                <span class="tech-tag">Model Checkpoints</span>
+                <span class="tech-tag">Async Processing</span>
+                <span class="tech-tag">Data Augmentation</span>
             </div>
         </div>
     </div>
 
-    <!-- Quick Start Section -->
-    <div class="quickstart-section fade-in">
-        <h2>Quick Start</h2>
-        <div class="quickstart-steps">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <h4>Choose Your Adventure</h4>
-                    <p>Start with ImageNet for image classification, MNIST for digit recognition, or Computer Vision for advanced analysis</p>
-                </div>
-            </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <h4>Upload or Draw</h4>
-                    <p>Upload your own images, draw digits on the interactive canvas, or use live camera feed</p>
-                </div>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <h4>Explore Results</h4>
-                    <p>See predictions, attention maps, object detection, and understand how the network thinks</p>
-                </div>
-            </div>
-            <div class="step">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <h4>Train Your Own</h4>
-                    <p>Build and train custom models with live progress visualization and real-time feedback</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Technology Section -->
-    <div class="tech-section fade-in">
-        <h2>Powered By</h2>
-        <div class="tech-grid">
-            <div class="tech-item">
-                <strong>PyTorch</strong>
-                <span>Deep learning framework</span>
-            </div>
-            <div class="tech-item">
-                <strong>FastAPI</strong>
-                <span>High-performance backend</span>
-            </div>
-            <div class="tech-item">
-                <strong>YOLO11</strong>
-                <span>State-of-the-art detection</span>
-            </div>
-            <div class="tech-item">
-                <strong>SAM 2.1</strong>
-                <span>Universal segmentation</span>
-            </div>
-            <div class="tech-item">
-                <strong>Grad-CAM</strong>
-                <span>Attention visualization</span>
-            </div>
-            <div class="tech-item">
-                <strong>Real-time Processing</strong>
-                <span>Live camera detection</span>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
 /* Hero Section */
@@ -217,7 +166,7 @@
     font-size: 1.2em;
     color: var(--text-secondary);
     margin-bottom: 40px;
-    max-width: 600px;
+    max-width: 700px;
     margin-left: auto;
     margin-right: auto;
     line-height: 1.6;
@@ -240,7 +189,7 @@
 /* Features Grid */
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 30px;
     margin-bottom: 60px;
 }
@@ -278,17 +227,6 @@
     border-color: var(--accent-color);
 }
 
-.feature-card.coming-soon {
-    opacity: 0.7;
-    cursor: default;
-}
-
-.feature-card.coming-soon:hover {
-    transform: none;
-    box-shadow: 0 10px 25px var(--shadow-light);
-    border-color: var(--border-color);
-}
-
 .feature-icon {
     font-size: 2em;
     font-weight: bold;
@@ -301,10 +239,15 @@
     display: inline-block;
     width: 100%;
     box-sizing: border-box;
+    transition: all 0.3s ease;
 }
 
 [data-theme="dark"] .feature-icon {
     background: rgba(59, 130, 246, 0.1);
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.05);
 }
 
 .feature-card h3 {
@@ -327,16 +270,17 @@
     flex-wrap: wrap;
     gap: 8px;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .highlight {
     background: var(--accent-color);
     color: white;
-    padding: 4px 12px;
+    padding: 6px 12px;
     border-radius: 12px;
     font-size: 0.8em;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 [data-theme="dark"] .highlight {
@@ -354,178 +298,73 @@
     transition: all 0.3s ease;
 }
 
-.coming-soon-text {
-    color: var(--text-secondary);
-    font-style: italic;
-}
-
 .feature-card:hover .btn-text {
     transform: translateX(5px);
 }
 
-/* Education Section */
-.education-section {
+/* Technology Showcase */
+.tech-showcase {
     background: var(--bg-secondary);
-    padding: 50px 40px;
-    border-radius: 20px;
-    margin-bottom: 60px;
-    border: 1px solid var(--border-color);
-}
-
-.education-section h2 {
-    text-align: center;
-    margin-bottom: 40px;
-    color: var(--text-primary);
-    font-size: 2em;
-    font-weight: 700;
-}
-
-.education-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
-}
-
-.education-item {
-    text-align: center;
-}
-
-.education-icon {
-    font-size: 1.5em;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: var(--accent-color);
-    background: rgba(139, 92, 246, 0.1);
-    padding: 15px;
-    border-radius: 50%;
-    display: inline-block;
-    width: 60px;
-    height: 60px;
-    line-height: 30px;
-}
-
-[data-theme="dark"] .education-icon {
-    background: rgba(59, 130, 246, 0.1);
-}
-
-.education-item h4 {
-    color: var(--text-primary);
-    margin-bottom: 10px;
-    font-size: 1.2em;
-    font-weight: 600;
-}
-
-.education-item p {
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-/* Quick Start Section */
-.quickstart-section {
-    margin-bottom: 60px;
-}
-
-.quickstart-section h2 {
-    text-align: center;
-    margin-bottom: 40px;
-    color: var(--text-primary);
-    font-size: 2em;
-    font-weight: 700;
-}
-
-.quickstart-steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
-}
-
-.step {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-}
-
-.step-number {
-    background: var(--accent-color);
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 1.2em;
-    flex-shrink: 0;
-}
-
-[data-theme="dark"] .step-number {
-    background: #3b82f6;
-}
-
-.step-content h4 {
-    color: var(--text-primary);
-    margin-bottom: 8px;
-    font-size: 1.1em;
-    font-weight: 600;
-}
-
-.step-content p {
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-/* Technology Section */
-.tech-section {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05));
     padding: 40px;
     border-radius: 20px;
-    border: 1px solid rgba(16, 185, 129, 0.1);
+    margin-bottom: 60px;
+    border: 1px solid var(--border-color);
 }
 
-[data-theme="dark"] .tech-section {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-    border-color: rgba(16, 185, 129, 0.2);
-}
-
-.tech-section h2 {
+.tech-showcase h2 {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     color: var(--text-primary);
-    font-size: 2em;
+    font-size: 2.2em;
     font-weight: 700;
 }
 
-.tech-grid {
+.tech-categories {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 30px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.tech-item {
-    background: var(--bg-primary);
-    padding: 20px;
-    border-radius: 12px;
+.tech-category {
     text-align: center;
-    border: 1px solid var(--border-color);
+}
+
+.tech-category h4 {
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.tech-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.tech-tag {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    color: var(--text-primary);
+    padding: 6px 14px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 500;
     transition: all 0.3s ease;
 }
 
-.tech-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px var(--shadow-light);
+[data-theme="dark"] .tech-tag {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(30, 64, 175, 0.1));
+    border-color: rgba(59, 130, 246, 0.2);
 }
 
-.tech-item strong {
-    display: block;
-    color: var(--text-primary);
-    font-size: 1.1em;
-    margin-bottom: 5px;
-}
-
-.tech-item span {
-    color: var(--text-secondary);
-    font-size: 0.9em;
+.tech-tag:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 /* Responsive Design */
@@ -547,17 +386,13 @@
         grid-template-columns: 1fr;
     }
 
-    .quickstart-steps {
+    .tech-categories {
         grid-template-columns: 1fr;
+        grid-template-rows: auto;
     }
 
-    .step {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .education-section, .tech-section {
-        padding: 30px 20px;
+    .tech-showcase {
+        padding: 25px;
     }
 }
 </style>

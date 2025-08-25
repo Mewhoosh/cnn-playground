@@ -79,90 +79,144 @@
                 </div>
 
                 <div class="model-info">
-                    <h3>Model Information</h3>
+                    <h3>Model Performance</h3>
                     <div id="modelDetails">
-                        <p><strong>Architecture:</strong> LeNet-5</p>
-                        <p><strong>Layers:</strong> 2 Conv + 3 Dense</p>
-                        <p><strong>Parameters:</strong> ~62K trainable</p>
+                        <p><strong>Architecture:</strong> MNISTNet CNN</p>
+                        <p><strong>Parameters:</strong> 455,754 trainable</p>
                         <p><strong>Input:</strong> 28×28 grayscale</p>
-                        <p><strong>Dataset:</strong> MNIST digits</p>
+                        <p><strong>Test Accuracy:</strong> 99.66% on validation set</p>
+                        <p><strong>Training Time:</strong> 340 seconds (15 epochs)</p>
+                        <p><strong>Dataset:</strong> MNIST digits (60K train, 10K test)</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- How It Works Section -->
+    <!-- Network Architecture Visualization -->
     <div class="info-section fade-in">
-        <h2>How It Works</h2>
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-icon">🎨</div>
-                <h4>1. Draw Your Digit</h4>
-                <p>Use the canvas to draw any digit from 0-9. Switch to erase mode to fix mistakes locally without starting over.</p>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">🔄</div>
-                <h4>2. Image Preprocessing</h4>
-                <p>Your drawing is converted to 28×28 grayscale, inverted, and normalized to match MNIST training data.</p>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">🧠</div>
-                <h4>3. Neural Network</h4>
-                <p>A LeNet-5 CNN processes the image through convolutional and dense layers to classify the digit.</p>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">📊</div>
-                <h4>4. Confidence Scores</h4>
-                <p>See prediction confidence for all 10 digits, helping you understand the model's decision process.</p>
-            </div>
+        <h2>Network Architecture Flow</h2>
+        <div style="text-align: center; padding: 30px; background: var(--bg-secondary); border-radius: 15px; border: 1px solid var(--border-color);">
+            <!-- Placeholder for architecture diagram image -->
+            <img src="/static/images/mnist_architecture_diagram.png"
+                 alt="CNN Architecture Diagram"
+                 class="modal-image"
+                 data-modal-src="/static/images/mnist_architecture_diagram.png"
+                 style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s ease;"
+                 onmouseover="this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.transform='scale(1)'">
         </div>
     </div>
 
-    <!-- Technical Details Section -->
+    <!-- Model Summary Section -->
+    <div class="info-section fade-in">
+        <h2>Model Summary</h2>
+        <div style="text-align: center; padding: 30px; background: var(--bg-secondary); border-radius: 15px; border: 1px solid var(--border-color);">
+            <img src="/static/images/mnist_model_summary.png"
+                 alt="MNISTNet Model Summary"
+                 class="modal-image"
+                 data-modal-src="/static/images/mnist_model_summary.png"
+                 style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s ease;"
+                 onmouseover="this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.transform='scale(1)'">
+        </div>
+    </div>
+
+    <!-- Enhanced Training Details Section -->
     <div class="technical-section fade-in">
-        <h2>Technical Details</h2>
+        <h2>Training Details</h2>
         <div class="technical-grid">
             <div class="technical-item">
-                <h4>Neural Network Architecture</h4>
+                <h4>Training Configuration</h4>
                 <ul>
-                    <li><strong>Conv Layer 1:</strong> 6 filters, 5×5 kernel</li>
-                    <li><strong>Conv Layer 2:</strong> 16 filters, 5×5 kernel</li>
-                    <li><strong>Dense Layer 1:</strong> 120 neurons</li>
-                    <li><strong>Dense Layer 2:</strong> 84 neurons</li>
-                    <li><strong>Output Layer:</strong> 10 classes (digits 0-9)</li>
+                    <li><strong>Dataset:</strong> 60,000 training images</li>
+                    <li><strong>Validation:</strong> 10,000 test images</li>
+                    <li><strong>Batch Size:</strong> 128 samples</li>
+                    <li><strong>Epochs:</strong> 15 (early convergence)</li>
+                    <li><strong>Optimizer:</strong> Adam (β₁=0.9, β₂=0.999)</li>
+                    <li><strong>Weight Decay:</strong> 1e-4 (L2 regularization)</li>
+                    <li><strong>Total Training Time:</strong> 5 min 40 s</li>
                 </ul>
             </div>
+
+
+
             <div class="technical-item">
-                <h4>Data Processing Pipeline</h4>
+                <h4>Data Augmentation</h4>
                 <ul>
-                    <li><strong>Input:</strong> Canvas drawing (280×280)</li>
-                    <li><strong>Resize:</strong> Scale to 28×28 pixels</li>
-                    <li><strong>Invert:</strong> White background → Black</li>
-                    <li><strong>Normalize:</strong> MNIST statistics (μ=0.1307, σ=0.3081)</li>
-                    <li><strong>Tensor:</strong> PyTorch tensor format</li>
+                    <li><strong>Random Rotation:</strong> ±10 degrees</li>
+                    <li><strong>Random Translation:</strong> ±10% in x,y directions</li>
+                    <li><strong>Normalization:</strong> μ=0.1307, σ=0.3081</li>
+                    <li><strong>Training Only:</strong> No augmentation during inference</li>
+                    <li><strong>Purpose:</strong> Improve generalization to variations</li>
+                    <li><strong>Effect:</strong> Reduces overfitting significantly</li>
                 </ul>
             </div>
+
             <div class="technical-item">
-                <h4>Model Performance</h4>
+                <h4>Final Performance</h4>
                 <ul>
-                    <li><strong>Training Dataset:</strong> 60,000 MNIST images</li>
-                    <li><strong>Test Accuracy:</strong> ~98.5%</li>
-                    <li><strong>Inference Time:</strong> <10ms on CPU</li>
-                    <li><strong>Model Size:</strong> ~250KB</li>
-                    <li><strong>Framework:</strong> PyTorch</li>
+                    <li><strong>Best Validation Accuracy:</strong> 99.66%</li>
+                    <li><strong>Final Training Accuracy:</strong> 99.37%</li>
+                    <li><strong>Model Size:</strong> 1.74 MB parameters</li>
+                    <li><strong>Inference Speed:</strong> ~3-5ms on CPU</li>
+                    <li><strong>Framework:</strong> PyTorch 2.0+</li>
+                    <li><strong>Convergence:</strong> Epoch 11 (best validation)</li>
                 </ul>
             </div>
-            <div class="technical-item">
-                <h4>Implementation Details</h4>
-                <ul>
-                    <li><strong>Backend:</strong> FastAPI + PyTorch</li>
-                    <li><strong>Frontend:</strong> HTML5 Canvas + JavaScript</li>
-                    <li><strong>Preprocessing:</strong> PIL + OpenCV</li>
-                    <li><strong>Real-time:</strong> Auto-prediction on draw</li>
-                    <li><strong>Mobile:</strong> Touch support included</li>
-                </ul>
+        </div>
+
+        <div class="performance-highlights" style="margin-top: 30px; padding: 25px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05)); border-radius: 15px; border: 1px solid rgba(16, 185, 129, 0.1); text-align: center;">
+            <h3 style="color: #10B981; margin-bottom: 15px;">Training Achievements</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <div style="font-size: 2em; font-weight: bold; color: var(--accent-color);">99.66%</div>
+                    <div style="color: var(--text-secondary);">Best Validation Accuracy</div>
+                </div>
+                <div>
+                    <div style="font-size: 2em; font-weight: bold; color: var(--accent-color);">340s</div>
+                    <div style="color: var(--text-secondary);">Total Training Time</div>
+                </div>
+                <div>
+                    <div style="font-size: 2em; font-weight: bold; color: var(--accent-color);">455K</div>
+                    <div style="color: var(--text-secondary);">Trainable Parameters</div>
+                </div>
             </div>
+        </div>
+
+        <div class="input-pipeline" style="margin-top: 30px; padding: 25px; background: rgba(59, 130, 246, 0.05); border-radius: 15px; border: 1px solid rgba(59, 130, 246, 0.1);">
+            <h4 style="color: #3b82f6; margin-bottom: 15px;">Input Processing Pipeline</h4>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <div style="text-align: center; flex: 1; min-width: 120px;">
+                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; margin-bottom: 10px;">280×280<br>RGB Canvas</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9em;">User Drawing</div>
+                </div>
+                <div style="color: var(--accent-color); font-size: 1.5em;">→</div>
+                <div style="text-align: center; flex: 1; min-width: 120px;">
+                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; margin-bottom: 10px;">280×280<br>Grayscale</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9em;">Color Convert</div>
+                </div>
+                <div style="color: var(--accent-color); font-size: 1.5em;">→</div>
+                <div style="text-align: center; flex: 1; min-width: 120px;">
+                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; margin-bottom: 10px;">28×28<br>Resized</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9em;">Downsample</div>
+                </div>
+                <div style="color: var(--accent-color); font-size: 1.5em;">→</div>
+                <div style="text-align: center; flex: 1; min-width: 120px;">
+                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; margin-bottom: 10px;">Normalized<br>Tensor</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9em;">Ready for CNN</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Notebook Link -->
+        <div style="text-align: center; margin-top: 40px; padding: 25px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(168, 85, 247, 0.05)); border-radius: 15px; border: 1px solid rgba(139, 92, 246, 0.1);">
+            <h3 style="margin-bottom: 15px; color: var(--text-primary); font-size: 1.2em;">Want to see how this model was trained?</h3>
+            <a href="https://colab.research.google.com/drive/1karRYX1upsrTX5XpDzBlHCIpad2A8sfw?usp=sharing"
+               target="_blank"
+               style="display: inline-block; background: linear-gradient(135deg, var(--accent-color), #a855f7); color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: 600; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                View Training Notebook
+            </a>
         </div>
     </div>
 </div>
@@ -196,9 +250,11 @@
                 const modelDetails = document.getElementById('modelDetails');
                 if (modelDetails && data) {
                     modelDetails.innerHTML = `
-                        <p><strong>Architecture:</strong> ${data.architecture || 'LeNet-5'}</p>
-                        <p><strong>Parameters:</strong> ${data.total_parameters?.toLocaleString() || '~62K'}</p>
+                        <p><strong>Architecture:</strong> ${data.architecture || 'Enhanced CNN with BatchNorm'}</p>
+                        <p><strong>Parameters:</strong> ${data.total_parameters?.toLocaleString() || '455,754'}</p>
                         <p><strong>Input Size:</strong> ${data.input_size || '28×28 grayscale'}</p>
+                        <p><strong>Test Accuracy:</strong> ${data.test_accuracy || '99.66%'} on validation set</p>
+                        <p><strong>Training Time:</strong> ${data.training_time || '340'} seconds</p>
                         <p><strong>Device:</strong> ${data.device || 'CPU'}</p>
                         <p><strong>Classes:</strong> ${data.output_classes || 10} digits (0-9)</p>
                     `;

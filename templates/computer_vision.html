@@ -16,25 +16,32 @@
     <!-- Main Navigation Tabs -->
     <div class="main-tabs">
         <button class="main-tab active" data-tab="image">
-            <div class="tab-icon">IMAGE</div>
-            <div class="tab-content">
-                <div class="tab-title">Image Analysis</div>
-                <div class="tab-description">Static image processing</div>
+            <div class="tab-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21,15 16,10 5,21"/>
+                </svg>
             </div>
+            <div class="tab-label">Image</div>
         </button>
         <button class="main-tab" data-tab="video">
-            <div class="tab-icon">VIDEO</div>
-            <div class="tab-content">
-                <div class="tab-title">Video Processing</div>
-                <div class="tab-description">Frame-by-frame analysis</div>
+            <div class="tab-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polygon points="23 7 16 12 23 17 23 7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
             </div>
+            <div class="tab-label">Video</div>
         </button>
         <button class="main-tab" data-tab="live">
-            <div class="tab-icon">LIVE</div>
-            <div class="tab-content">
-                <div class="tab-title">Live Camera</div>
-                <div class="tab-description">Real-time detection</div>
+            <div class="tab-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
             </div>
+            <div class="tab-label">Live</div>
         </button>
     </div>
 
@@ -42,6 +49,13 @@
     <div class="tab-panel active" id="image-panel">
         <!-- Upload Section -->
         <div class="upload-section" id="uploadSection">
+            <div class="upload-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7,10 12,15 17,10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+            </div>
             <h3>Upload Image for Analysis</h3>
             <p>Drag and drop an image or click to select from your device</p>
             <p class="upload-specs">Supported formats: JPG, PNG, WebP (max 10MB)</p>
@@ -56,12 +70,13 @@
                 <div class="config-item">
                     <label for="detectionModel">Detection Model</label>
                     <select id="detectionModel">
-                        <option value="yolo11n">YOLO11-Nano (Fast)</option>
-                        <option value="yolo11s">YOLO11-Small</option>
+                        <option value="yolo11n">YOLO11-Nano (Fast, Lower Accuracy)</option>
+                        <option value="yolo11s">YOLO11-Small (Balanced)</option>
                         <option value="yolo11m" selected>YOLO11-Medium (Recommended)</option>
-                        <option value="yolo11l">YOLO11-Large</option>
-                        <option value="yolo11x">YOLO11-XLarge (Accurate)</option>
+                        <option value="yolo11l">YOLO11-Large (Slow, High Accuracy)</option>
+                        <option value="yolo11x">YOLO11-XLarge (Slowest, Highest Accuracy)</option>
                     </select>
+                    <small class="model-note">Processing time: 2-15 seconds depending on model size</small>
                 </div>
                 <div class="config-item">
                     <label for="segmentationModel">Segmentation Model</label>
@@ -70,15 +85,17 @@
                         <option value="yolo11s-seg">YOLO11-Small Segmentation</option>
                         <option value="yolo11m-seg" selected>YOLO11-Medium Segmentation</option>
                         <option value="yolo11l-seg">YOLO11-Large Segmentation</option>
-                        <option value="sam2_b">SAM 2.1 Base (Universal)</option>
+                        <option value="sam2_b">SAM 2.1 Base (Universal Segmentation)</option>
                         <option value="sam2_l">SAM 2.1 Large (Best Quality)</option>
                     </select>
+                    <small class="model-note">Pixel-level object boundaries with high precision</small>
                 </div>
                 <div class="config-item">
                     <label for="confidenceThreshold">
                         Confidence Threshold: <span id="confidenceValue">0.5</span>
                     </label>
                     <input type="range" id="confidenceThreshold" min="0.1" max="0.9" step="0.05" value="0.5">
+                    <small class="model-note">Minimum confidence score for object detection</small>
                 </div>
             </div>
         </div>
@@ -133,7 +150,7 @@
                             </div>
                             <div class="stat-item">
                                 <span class="stat-value" id="detectionTime">0ms</span>
-                                <span class="stat-label">Time</span>
+                                <span class="stat-label">Processing Time</span>
                             </div>
                         </div>
                         <div class="detected-objects-list" id="detectedObjectsList">
@@ -158,7 +175,7 @@
                             </div>
                             <div class="stat-item">
                                 <span class="stat-value" id="segmentationTime">0ms</span>
-                                <span class="stat-label">Time</span>
+                                <span class="stat-label">Processing Time</span>
                             </div>
                         </div>
                         <div class="segmentation-classes-list" id="segmentationClassesList">
@@ -238,6 +255,12 @@
     <!-- Video Processing Panel -->
     <div class="tab-panel" id="video-panel">
         <div class="upload-section">
+            <div class="upload-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <polygon points="23 7 16 12 23 17 23 7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+            </div>
             <h3>Upload Video for Processing</h3>
             <p>Drag and drop a video file or click to select from your device</p>
             <p class="upload-specs">Supported formats: MP4, AVI, MOV, WebM (max 100MB)</p>
@@ -247,29 +270,40 @@
 
         <div class="model-configuration">
             <h3>Video Processing Configuration</h3>
+            <div class="performance-warning">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>Video processing may take several minutes depending on video length and quality settings</span>
+            </div>
             <div class="config-grid">
                 <div class="config-item">
                     <label for="videoDetectionModel">Detection Model</label>
                     <select id="videoDetectionModel">
-                        <option value="yolo11n" selected>YOLO11-Nano (Fastest)</option>
-                        <option value="yolo11s">YOLO11-Small</option>
-                        <option value="yolo11m">YOLO11-Medium</option>
+                        <option value="yolo11n" selected>YOLO11-Nano (Fastest Processing)</option>
+                        <option value="yolo11s">YOLO11-Small (Balanced Speed/Quality)</option>
+                        <option value="yolo11m">YOLO11-Medium (Higher Quality, Slower)</option>
                     </select>
+                    <small class="model-note">Faster models recommended for video processing</small>
                 </div>
                 <div class="config-item">
-                    <label for="frameSkip">Frame Processing</label>
+                    <label for="frameSkip">Frame Processing Rate</label>
                     <select id="frameSkip">
-                        <option value="1">Every Frame (Slow, High Quality)</option>
-                        <option value="2" selected>Every 2nd Frame (Balanced)</option>
-                        <option value="3">Every 3rd Frame</option>
-                        <option value="5">Every 5th Frame (Fast, Lower Quality)</option>
+                        <option value="1">Process Every Frame (Slow, Highest Quality)</option>
+                        <option value="2" selected>Process Every 2nd Frame (Balanced)</option>
+                        <option value="3">Process Every 3rd Frame (Faster)</option>
+                        <option value="5">Process Every 5th Frame (Fastest, Lower Quality)</option>
                     </select>
+                    <small class="model-note">Lower frame rates process faster but may miss quick movements</small>
                 </div>
                 <div class="config-item">
                     <label for="videoConfidence">
                         Confidence Threshold: <span id="videoConfidenceValue">0.4</span>
                     </label>
                     <input type="range" id="videoConfidence" min="0.1" max="0.9" step="0.05" value="0.4">
+                    <small class="model-note">Lower threshold detects more objects but may include false positives</small>
                 </div>
             </div>
         </div>
@@ -317,28 +351,33 @@
                 <div class="config-item">
                     <label for="liveDetectionModel">Detection Model</label>
                     <select id="liveDetectionModel">
-                        <option value="yolo11n" selected>YOLO11-Nano (Real-time)</option>
-                        <option value="yolo11s">YOLO11-Small</option>
-                        <option value="yolo11m">YOLO11-Medium</option>
-                    <optgroup label="Local Models">
-                        <option value="local_coco_ssd">COCO-SSD (TensorFlow.js) - Ultra Fast</option>
-                    </optgroup>
+                        <optgroup label="Server Models (Python/PyTorch)">
+                            <option value="yolo11n" selected>YOLO11-Nano (Slower, Better Accuracy)</option>
+                            <option value="yolo11s">YOLO11-Small (Slower, Good Accuracy)</option>
+                            <option value="yolo11m">YOLO11-Medium (Slowest, Best Accuracy)</option>
+                        </optgroup>
+                        <optgroup label="Local Models (Browser/TensorFlow.js)">
+                            <option value="local_coco_ssd">COCO-SSD Local (Fastest, Good for Real-time)</option>
+                        </optgroup>
                     </select>
+                    <small class="model-note">Server models provide much slower processing</small>
                 </div>
                 <div class="config-item">
                     <label for="liveConfidence">
                         Confidence Threshold: <span id="liveConfidenceValue">0.3</span>
                     </label>
                     <input type="range" id="liveConfidence" min="0.1" max="0.9" step="0.05" value="0.3">
+                    <small class="model-note">Lower values detect more objects but may include false positives</small>
                 </div>
                 <div class="config-item">
                     <label for="processingFps">Processing Rate</label>
                     <select id="processingFps">
-                        <option value="2">2 FPS (Battery Saving)</option>
+                        <option value="1">1 FPS (Battery Saving)</option>
+                        <option value="2">2 FPS (Conservative)</option>
                         <option value="3" selected>3 FPS (Balanced)</option>
                         <option value="5">5 FPS (Smooth)</option>
-                        <option value="10">10 FPS (High Performance)</option>
                     </select>
+                    <small class="model-note">Higher FPS available with local models</small>
                 </div>
             </div>
         </div>
@@ -355,39 +394,13 @@
                 <video id="liveVideo" autoplay muted style="display:none;"></video>
                 <canvas id="liveCanvas" style="display:none;"></canvas>
 
-                <!-- Camera Status Indicator -->
-                <div class="camera-status" id="cameraStatus" style="display:none;">
-                    <span id="statusText">Initializing...</span>
-                </div>
-
-                <!-- Performance Indicator -->
-                <div class="performance-indicator" id="performanceIndicator" style="display:none;">
-                    <div class="perf-item">
-                        <span class="perf-value" id="perfFps">0</span>
-                        <span class="perf-label">FPS</span>
-                    </div>
-                    <div class="perf-item">
-                        <span class="perf-value" id="perfLatency">0</span>
-                        <span class="perf-label">ms</span>
-                    </div>
-                    <div class="perf-item">
-                        <span class="perf-value" id="perfObjects">0</span>
-                        <span class="perf-label">Objects</span>
-                    </div>
-                </div>
-
-                <!-- Camera Controls Overlay -->
-                <div class="camera-controls-overlay" id="cameraControlsOverlay" style="display:none;">
-                    <button class="control-btn" id="fullscreenBtn" title="Fullscreen">
-                        📺
-                    </button>
-                    <button class="control-btn" id="settingsBtn" title="Settings">
-                        ⚙️
-                    </button>
-                </div>
-
                 <div class="camera-placeholder" id="cameraPlaceholder">
-                    <div class="placeholder-icon">📷</div>
+                    <div class="placeholder-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                    </div>
                     <h4>Camera Ready</h4>
                     <p>Click "Start Camera" to begin real-time object detection</p>
                     <small>Your browser will request camera permission</small>
@@ -403,7 +416,7 @@
                 </div>
                 <div class="stat-item">
                     <span class="stat-value" id="liveFps">0</span>
-                    <span class="stat-label">Processing FPS</span>
+                    <span class="stat-label">Processing Rate</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-value" id="liveLatency">0ms</span>
@@ -437,14 +450,6 @@
 
         // Initialize Computer Vision Analyzer
         const computerVisionAnalyzer = new ComputerVisionAnalyzer();
-
-        // Add fullscreen functionality
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => {
-                computerVisionAnalyzer.toggleFullscreen();
-            });
-        }
 
         console.log('Computer Vision page initialized');
     });
