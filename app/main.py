@@ -1201,28 +1201,50 @@ if __name__ == "__main__":
         status: str = "✓ OK" if exists else "✗ MISSING"
         print(f"  {component:<20}: {status}")
 
-    print(f"\nServer configuration:")
-    print(f"  Host: 127.0.0.1")
-    print(f"  Port: 8000")
-    print(f"  Reload: Enabled (Development)")
-    print(f"  Log level: INFO")
+    # Get computer's IP address
+    import socket
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
 
+    # Check if SSL certificates exist
+    ssl_cert = Path("certificates/server.crt")
+    ssl_key = Path("certificates/server.key")
+    use_ssl = ssl_cert.exists() and ssl_key.exists()
+
+    print(f"\nServer configuration:")
+    print(f"  Host: 0.0.0.0")
+    print(f"  Port: 8000")
+    print(f"  Local IP: {local_ip}")
+    print(f"  SSL: {'Enabled' if use_ssl else 'Disabled'}")
+    print(f"  Reload: Enabled (Development)")
+
+    protocol = "https" if use_ssl else "http"
     print(f"\nAccess URLs:")
-    print(f"  Main interface:        http://localhost:8000")
-    print(f"  ImageNet analysis:     http://localhost:8000/imagenet")
-    print(f"  MNIST playground:      http://localhost:8000/mnist")
-    print(f"  Computer Vision:       http://localhost:8000/vision")
-    print(f"  API documentation:     http://localhost:8000/docs")
-    print(f"  Health check:          http://localhost:8000/health")
+    print(f"  Local access:          {protocol}://localhost:8000")
+    print(f"  Network access:        {protocol}://{local_ip}:8000")
+    print(f"  Computer Vision:       {protocol}://{local_ip}:8000/vision")
+    print(f"  API documentation:     {protocol}://{local_ip}:8000/docs")
 
     print("=" * 70 + "\n")
 
-    # Start server with configuration
-    uvicorn.run(
-        "main:app",
-        host="127.0.0.1",
-        port=8000,
-        reload=True,
-        log_level="info",
-        reload_excludes=["static/outputs/*", "temp/*"]
-    )
+    # Start server with or without SSL
+    if use_ssl:
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            log_level="info",
+            ssl_keyfile="certificates/server.key",
+            ssl_certfile="certificates/server.crt",
+            reload_excludes=["static/outputs/*", "temp/*"]
+        )
+    else:
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            log_level="info",
+            reload_excludes=["static/outputs/*", "temp/*"]
+        )
