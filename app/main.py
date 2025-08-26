@@ -5,7 +5,7 @@
 FastAPI server for computer vision tasks including image classification,
 object detection, instance segmentation, and video processing.
 """
-
+import sys
 from typing import Dict, List, Optional, Any, Union
 from fastapi import FastAPI, File, UploadFile, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -1161,11 +1161,31 @@ async def shutdown_event() -> None:
 # MAIN APPLICATION ENTRY POINT
 # ================================
 
+
 if __name__ == "__main__":
+    """
+    Application entry point with environment setup.
+
+    Ensures proper working directory and Python path configuration
+    regardless of how the script is executed.
+    """
     print("\n" + "=" * 70)
-    print("CNN PLAYGROUND - COMPUTER VISION PLATFORM")
+    print("CNN PLAYGROUND")
     print("=" * 70)
-    print(f"Working directory: {os.getcwd()}")
+
+    # Resolve current file path and check if running from app subdirectory
+    current_file = Path(__file__).resolve()
+    if current_file.parent.name == "app":
+        # Set working directory to project root for proper resource access
+        project_root = current_file.parent.parent
+        os.chdir(project_root)
+
+        # Add project root to Python path for module imports
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
+    print(f"Working directory set to: {os.getcwd()}")
+
 
     # System verification
     structure_verification: Dict[str, bool] = {

@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "C:\\PycharmProjects\\cnn-playground\\datasets",
+  "weights_dir": "weights",
+  "runs_dir": "runs",
+  "uuid": "6e369aee0a49dce6386cdebf767644702718f46a71c219209a5ca96aba152539",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}
