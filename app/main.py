@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-CNN Playground - Professional FastAPI Server
-Enhanced with video processing and live camera detection endpoints
+ CNN Playground - FastAPI Server
+
+FastAPI server for computer vision tasks including image classification,
+object detection, instance segmentation, and video processing.
 """
 
+from typing import Dict, List, Optional, Any, Union
 from fastapi import FastAPI, File, UploadFile, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,36 +20,35 @@ import shutil
 from datetime import datetime
 import logging
 import asyncio
-from typing import Optional
 import mimetypes
 
-# Setup comprehensive logging
+# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 def create_application() -> FastAPI:
     """
-    Create and configure FastAPI application instance
+    Create and configure FastAPI application instance.
 
     Returns:
-        FastAPI: Configured application instance
+        Configured FastAPI application
     """
-    app = FastAPI(
-        title="CNN Playground - Professional Computer Vision Platform",
-        description="Advanced deep learning platform for image classification, object detection, and video analysis",
+    app: FastAPI = FastAPI(
+        title="CNN Playground - Computer Vision Platform",
+        description="Deep learning platform for image classification, object detection, and video analysis",
         version="2.0.0",
         docs_url="/docs",
         redoc_url="/redoc"
     )
 
-    # Configure CORS for development and production
+    # Configure CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -57,9 +59,9 @@ def create_application() -> FastAPI:
 
 def setup_directories() -> None:
     """
-    Create necessary application directories with proper structure
+    Create necessary application directories with structure.
     """
-    directory_structure = [
+    directory_structure: List[str] = [
         "static/css",
         "static/js",
         "static/uploads",
@@ -84,27 +86,40 @@ def setup_directories() -> None:
     for directory in directory_structure:
         Path(directory).mkdir(parents=True, exist_ok=True)
 
-    logger.info("Application directory structure created successfully")
+    logger.info("Application directory structure created")
 
 
 # Initialize FastAPI application
-app = create_application()
+app: FastAPI = create_application()
 setup_directories()
 
-# Mount static file handlers with proper configuration
+# Mount static file handlers
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# Custom StaticFiles for outputs with proper MIME types
 class CustomStaticFiles(StaticFiles):
-    def __init__(self, directory: str, name: str = None):
+    """Custom static files handler with proper MIME types for video files."""
+
+    def __init__(self, directory: str, name: Optional[str] = None) -> None:
         super().__init__(directory=directory)
         self.name = name
 
-    async def get_response(self, path: str, scope):
-        """Override to set proper MIME types for video files"""
+    async def get_response(self, path: str, scope: Dict[str, Any]) -> FileResponse:
+        """
+        Override to set proper MIME types for video files.
+
+        Args:
+            path: File path to serve
+            scope: ASGI scope
+
+        Returns:
+            FileResponse with proper content type
+
+        Raises:
+            HTTPException: If file not found
+        """
         try:
-            response = await super().get_response(path, scope)
+            response: FileResponse = await super().get_response(path, scope)
 
             # Set proper MIME types for video files
             if path.endswith('.mp4'):
@@ -124,7 +139,7 @@ class CustomStaticFiles(StaticFiles):
 
 app.mount("/outputs", CustomStaticFiles(directory="static/outputs"), name="outputs")
 
-templates = Jinja2Templates(directory="templates")
+templates: Jinja2Templates = Jinja2Templates(directory="templates")
 
 
 # ================================
@@ -132,15 +147,15 @@ templates = Jinja2Templates(directory="templates")
 # ================================
 
 @app.get("/", response_class=HTMLResponse)
-async def homepage(request: Request):
+async def homepage(request: Request) -> HTMLResponse:
     """
-    Main landing page with feature overview
+    Main landing page with feature overview.
 
     Args:
         request: FastAPI request object
 
     Returns:
-        TemplateResponse: Rendered homepage template
+        Rendered homepage template
     """
     return templates.TemplateResponse("index.html", {
         "request": request,
@@ -149,15 +164,15 @@ async def homepage(request: Request):
 
 
 @app.get("/imagenet", response_class=HTMLResponse)
-async def imagenet_classification_page(request: Request):
+async def imagenet_classification_page(request: Request) -> HTMLResponse:
     """
-    ImageNet classification interface with CNN analysis
+    ImageNet classification interface with CNN analysis.
 
     Args:
         request: FastAPI request object
 
     Returns:
-        TemplateResponse: Rendered ImageNet template
+        Rendered ImageNet template
     """
     return templates.TemplateResponse("imagenet.html", {
         "request": request,
@@ -166,15 +181,15 @@ async def imagenet_classification_page(request: Request):
 
 
 @app.get("/mnist", response_class=HTMLResponse)
-async def mnist_playground_page(request: Request):
+async def mnist_playground_page(request: Request) -> HTMLResponse:
     """
-    MNIST digit recognition playground with interactive canvas
+    MNIST digit recognition playground with interactive canvas.
 
     Args:
         request: FastAPI request object
 
     Returns:
-        TemplateResponse: Rendered MNIST template
+        Rendered MNIST template
     """
     return templates.TemplateResponse("mnist.html", {
         "request": request,
@@ -183,15 +198,15 @@ async def mnist_playground_page(request: Request):
 
 
 @app.get("/vision", response_class=HTMLResponse)
-async def computer_vision_page(request: Request):
+async def computer_vision_page(request: Request) -> HTMLResponse:
     """
-    Advanced computer vision interface with multi-mode processing
+    Computer vision interface with multi-mode processing.
 
     Args:
         request: FastAPI request object
 
     Returns:
-        TemplateResponse: Rendered computer vision template
+        Rendered computer vision template
     """
     return templates.TemplateResponse("computer_vision.html", {
         "request": request,
@@ -209,9 +224,9 @@ async def analyze_vision_endpoint(
         detection_model: str = Form("yolo11m"),
         segmentation_model: str = Form("yolo11m-seg"),
         confidence_threshold: float = Form(0.5)
-):
+) -> JSONResponse:
     """
-    Comprehensive computer vision analysis with detection and segmentation
+    Computer vision analysis with detection and segmentation.
 
     Args:
         file: Uploaded image file
@@ -220,7 +235,7 @@ async def analyze_vision_endpoint(
         confidence_threshold: Minimum confidence for detections
 
     Returns:
-        JSONResponse: Analysis results with visualizations
+        Analysis results with visualizations
 
     Raises:
         HTTPException: If file validation fails or processing errors occur
@@ -231,10 +246,10 @@ async def analyze_vision_endpoint(
 
     try:
         # Generate unique filename with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-        file_extension = Path(file.filename).suffix.lower()
-        filename = f"{timestamp}_vision{file_extension}"
-        file_path = f"static/uploads/{filename}"
+        timestamp: str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        file_extension: str = Path(file.filename).suffix.lower()
+        filename: str = f"{timestamp}_vision{file_extension}"
+        file_path: str = f"static/uploads/{filename}"
 
         # Save uploaded file
         with open(file_path, "wb") as buffer:
@@ -245,8 +260,8 @@ async def analyze_vision_endpoint(
         try:
             from app.models.vision_analyzer import analyze_vision_complete
 
-            # Perform comprehensive analysis
-            results = analyze_vision_complete(
+            # Perform analysis
+            results: Dict[str, Any] = analyze_vision_complete(
                 image_path=file_path,
                 detection_model=detection_model,
                 segmentation_model=segmentation_model,
@@ -267,7 +282,7 @@ async def analyze_vision_endpoint(
             })
 
             if results['status'] == 'success':
-                logger.info(f"Vision analysis completed successfully for {filename}")
+                logger.info(f"Vision analysis completed for {filename}")
                 return JSONResponse(results)
             else:
                 logger.error(f"Vision analysis failed: {results.get('message', 'Unknown error')}")
@@ -290,9 +305,9 @@ async def process_video_endpoint(
         detection_model: str = Form("yolo11n"),
         frame_skip: int = Form(2),
         confidence_threshold: float = Form(0.4)
-):
+) -> JSONResponse:
     """
-    Process video file with object detection frame by frame
+    Process video file with object detection frame by frame.
 
     Args:
         video: Uploaded video file
@@ -301,7 +316,7 @@ async def process_video_endpoint(
         confidence_threshold: Minimum confidence for detections
 
     Returns:
-        JSONResponse: Video processing results with download URL
+        Video processing results with download URL
 
     Raises:
         HTTPException: If file validation fails or processing errors occur
@@ -371,9 +386,9 @@ async def process_live_frame_endpoint(
         frame: UploadFile = File(...),
         detection_model: str = Form("yolo11n"),
         confidence_threshold: float = Form(0.3)
-):
+) -> JSONResponse:
     """
-    Process single frame from live camera feed for real-time detection
+    Process single frame from live camera feed for real-time detection.
 
     Args:
         frame: Camera frame as image file
@@ -381,7 +396,7 @@ async def process_live_frame_endpoint(
         confidence_threshold: Minimum confidence for detections
 
     Returns:
-        JSONResponse: Real-time detection results
+        Real-time detection results
 
     Raises:
         HTTPException: If frame processing fails
@@ -457,9 +472,9 @@ async def analyze_imagenet_image(
         file: UploadFile = File(...),
         dataset: str = Form("imagenet"),
         model: str = Form("resnet50")
-):
+) -> JSONResponse:
     """
-    Analyze image using CNN with feature maps and Grad-CAM visualization
+    Analyze image using CNN with feature maps and Grad-CAM visualization.
 
     Args:
         file: Uploaded image file
@@ -467,7 +482,7 @@ async def analyze_imagenet_image(
         model: CNN architecture selection
 
     Returns:
-        JSONResponse: Classification results with visualizations
+        Classification results with visualizations
 
     Raises:
         HTTPException: If file validation fails or analysis errors occur
@@ -524,15 +539,15 @@ async def analyze_imagenet_image(
 # ================================
 
 @app.post("/api/predict_mnist")
-async def predict_mnist_digit(request: Request):
+async def predict_mnist_digit(request: Request) -> JSONResponse:
     """
-    Predict MNIST digit from canvas drawing with confidence analysis
+    Predict MNIST digit from canvas drawing with confidence analysis.
 
     Args:
         request: FastAPI request containing image_data in JSON
 
     Returns:
-        JSONResponse: Digit prediction with confidence scores
+        Digit prediction with confidence scores
 
     Raises:
         HTTPException: If prediction fails or invalid data provided
@@ -571,12 +586,12 @@ async def predict_mnist_digit(request: Request):
 
 
 @app.get("/api/mnist/model_info")
-async def get_mnist_model_information():
+async def get_mnist_model_information() -> JSONResponse:
     """
-    Get comprehensive MNIST model information and statistics
+    Get MNIST model information and statistics.
 
     Returns:
-        JSONResponse: Model architecture and performance details
+        Model architecture and performance details
     """
     try:
         from app.models.mnist_classifier import get_mnist_model_info
@@ -599,20 +614,20 @@ async def get_mnist_model_information():
 # ================================
 
 @app.get("/api/models/{dataset}")
-async def get_available_models(dataset: str):
+async def get_available_models(dataset: str) -> JSONResponse:
     """
-    Get available model configurations for specified dataset
+    Get available model configurations for specified dataset.
 
     Args:
         dataset: Target dataset name
 
     Returns:
-        JSONResponse: Available models and default selections
+        Available models and default selections
 
     Raises:
         HTTPException: If dataset not supported
     """
-    models_configuration = {
+    models_configuration: Dict[str, Dict[str, Any]] = {
         "imagenet": {
             "models": ["resnet50", "vgg16", "efficientnet_b0", "mobilenet_v2"],
             "default": "resnet50",
@@ -653,12 +668,12 @@ async def get_available_models(dataset: str):
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     """
-    Application health check with system status
+    Application health check with system status.
 
     Returns:
-        dict: Health status and system information
+        Health status and system information
     """
     return {
         "status": "healthy",
@@ -676,18 +691,18 @@ async def health_check():
 
 
 @app.get("/api/status")
-async def get_comprehensive_system_status():
+async def get_comprehensive_system_status() -> JSONResponse:
     """
-    Get detailed system status including model availability
+    Get system status including model availability.
 
     Returns:
-        JSONResponse: Comprehensive system status
+        System status with model and capability information
     """
     import torch
 
     # Check directory structure
-    directories_status = {}
-    required_directories = [
+    directories_status: Dict[str, bool] = {}
+    required_directories: List[str] = [
         "static", "templates", "static/outputs",
         "app/models", "static/uploads", "temp"
     ]
@@ -695,7 +710,7 @@ async def get_comprehensive_system_status():
         directories_status[directory] = os.path.exists(directory)
 
     # Check model availability
-    models_status = {}
+    models_status: Dict[str, bool] = {}
 
     # MNIST classifier availability
     try:
@@ -719,7 +734,7 @@ async def get_comprehensive_system_status():
         models_status["vision_analyzer"] = False
 
     # System capabilities
-    capabilities = {
+    capabilities: Dict[str, Union[bool, int]] = {
         "pytorch_available": True,
         "cuda_available": torch.cuda.is_available(),
         "device_count": torch.cuda.device_count() if torch.cuda.is_available() else 0,
@@ -728,7 +743,7 @@ async def get_comprehensive_system_status():
         "live_camera": models_status.get("vision_analyzer", False)
     }
 
-    status_report = {
+    status_report: Dict[str, Any] = {
         "server_status": "online",
         "pytorch_version": torch.__version__,
         "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
@@ -757,7 +772,19 @@ async def get_comprehensive_system_status():
 
 async def generate_demo_vision_results(filename: str, file: UploadFile, detection_model: str,
                                        segmentation_model: str, confidence_threshold: float) -> JSONResponse:
-    """Generate demonstration results for computer vision analysis"""
+    """
+    Generate demonstration results for computer vision analysis.
+
+    Args:
+        filename: Generated filename for the uploaded file
+        file: Original uploaded file
+        detection_model: Selected detection model
+        segmentation_model: Selected segmentation model
+        confidence_threshold: Confidence threshold setting
+
+    Returns:
+        Mock analysis results in standard format
+    """
     import random
 
     return JSONResponse({
@@ -832,7 +859,19 @@ async def generate_demo_vision_results(filename: str, file: UploadFile, detectio
 
 async def generate_demo_video_results(filename: str, video: UploadFile, detection_model: str,
                                       frame_skip: int, confidence_threshold: float) -> JSONResponse:
-    """Generate demonstration results for video processing"""
+    """
+    Generate demonstration results for video processing.
+
+    Args:
+        filename: Generated filename for the uploaded video
+        video: Original uploaded video file
+        detection_model: Selected detection model
+        frame_skip: Frame skip setting
+        confidence_threshold: Confidence threshold setting
+
+    Returns:
+        Mock video processing results
+    """
     import random
 
     return JSONResponse({
@@ -857,7 +896,18 @@ async def generate_demo_video_results(filename: str, video: UploadFile, detectio
 
 
 async def generate_demo_imagenet_results(filename: str, file: UploadFile, dataset: str, model: str) -> JSONResponse:
-    """Generate demonstration results for ImageNet analysis"""
+    """
+    Generate demonstration results for ImageNet analysis.
+
+    Args:
+        filename: Generated filename for the uploaded file
+        file: Original uploaded file
+        dataset: Selected dataset
+        model: Selected model
+
+    Returns:
+        Mock ImageNet analysis results
+    """
     demo_classes = [
         "Golden Retriever", "Labrador Retriever", "German Shepherd",
         "Bulldog", "Poodle", "Beagle", "Rottweiler", "Border Collie"
@@ -904,7 +954,12 @@ async def generate_demo_imagenet_results(filename: str, file: UploadFile, datase
 
 
 async def generate_demo_mnist_results() -> JSONResponse:
-    """Generate demonstration results for MNIST prediction"""
+    """
+    Generate demonstration results for MNIST prediction.
+
+    Returns:
+        Mock MNIST prediction results
+    """
     import random
 
     mock_digit = random.randint(0, 9)
@@ -947,16 +1002,16 @@ async def generate_demo_mnist_results() -> JSONResponse:
 # ================================
 
 @app.exception_handler(404)
-async def not_found_handler(request: Request, exc):
+async def not_found_handler(request: Request, exc: Exception) -> Union[JSONResponse, HTMLResponse]:
     """
-    Handle 404 errors with appropriate responses
+    Handle 404 errors with appropriate responses.
 
     Args:
         request: FastAPI request object
         exc: Exception details
 
     Returns:
-        JSONResponse or HTMLResponse: Error response
+        Error response (JSON for API, HTML for pages)
     """
     if request.url.path.startswith("/api/"):
         return JSONResponse(
@@ -988,16 +1043,16 @@ async def not_found_handler(request: Request, exc):
 
 
 @app.exception_handler(500)
-async def internal_error_handler(request: Request, exc):
+async def internal_error_handler(request: Request, exc: Exception) -> Union[JSONResponse, HTMLResponse]:
     """
-    Handle 500 errors with logging and appropriate responses
+    Handle 500 errors with logging and appropriate responses.
 
     Args:
         request: FastAPI request object
         exc: Exception details
 
     Returns:
-        JSONResponse or HTMLResponse: Error response
+        Error response with logging
     """
     logger.error(f"Internal server error on {request.url.path}: {exc}", exc_info=True)
 
@@ -1027,15 +1082,15 @@ async def internal_error_handler(request: Request, exc):
 # ================================
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """
-    Initialize application on startup with comprehensive setup
+    Initialize application on startup with setup tasks.
     """
     logger.info("CNN Playground server initializing...")
 
     # Verify critical directory structure
-    required_dirs = ["templates", "static", "app/models", "temp"]
-    missing_dirs = [d for d in required_dirs if not Path(d).exists()]
+    required_dirs: List[str] = ["templates", "static", "app/models", "temp"]
+    missing_dirs: List[str] = [d for d in required_dirs if not Path(d).exists()]
 
     if missing_dirs:
         logger.warning(f"Missing critical directories: {missing_dirs}")
@@ -1043,28 +1098,28 @@ async def startup_event():
             Path(missing_dir).mkdir(parents=True, exist_ok=True)
             logger.info(f"Created missing directory: {missing_dir}")
     else:
-        logger.info("Directory structure verified successfully")
+        logger.info("Directory structure verified")
 
     # Pre-load models for improved first-request performance
-    model_load_tasks = []
+    model_load_tasks: List[Any] = []
 
     # MNIST classifier pre-loading
-    async def load_mnist():
+    async def load_mnist() -> None:
         try:
             from app.models.mnist_classifier import get_mnist_classifier
             get_mnist_classifier()
-            logger.info("MNIST classifier pre-loaded successfully")
+            logger.info("MNIST classifier pre-loaded")
         except ImportError:
             logger.warning("MNIST classifier not available")
         except Exception as e:
             logger.error(f"Failed to pre-load MNIST classifier: {e}")
 
     # Vision analyzer pre-loading
-    async def load_vision():
+    async def load_vision() -> None:
         try:
             from app.models.vision_analyzer import get_sota_vision_analyzer
             get_sota_vision_analyzer()
-            logger.info("Computer vision analyzer pre-loaded successfully")
+            logger.info("Computer vision analyzer pre-loaded")
         except ImportError:
             logger.warning("Computer vision analyzer not available")
         except Exception as e:
@@ -1078,20 +1133,20 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Error during model pre-loading: {e}")
 
-    logger.info("CNN Playground startup completed successfully")
+    logger.info("CNN Playground startup completed")
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """
-    Cleanup resources on application shutdown
+    Cleanup resources on application shutdown.
     """
     logger.info("CNN Playground shutting down...")
 
     # Cleanup temporary files
-    temp_dirs = ["temp/processing", "temp/video_frames"]
+    temp_dirs: List[str] = ["temp/processing", "temp/video_frames"]
     for temp_dir in temp_dirs:
-        temp_path = Path(temp_dir)
+        temp_path: Path = Path(temp_dir)
         if temp_path.exists():
             try:
                 shutil.rmtree(temp_path)
@@ -1108,12 +1163,12 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     print("\n" + "=" * 70)
-    print("CNN PLAYGROUND - PROFESSIONAL COMPUTER VISION PLATFORM")
+    print("CNN PLAYGROUND - COMPUTER VISION PLATFORM")
     print("=" * 70)
     print(f"Working directory: {os.getcwd()}")
 
     # System verification
-    structure_verification = {
+    structure_verification: Dict[str, bool] = {
         "Templates": Path("templates").exists(),
         "Static files": Path("static").exists(),
         "Model modules": Path("app/models").exists(),
@@ -1123,7 +1178,7 @@ if __name__ == "__main__":
 
     print("\nSystem verification:")
     for component, exists in structure_verification.items():
-        status = "✓ OK" if exists else "✗ MISSING"
+        status: str = "✓ OK" if exists else "✗ MISSING"
         print(f"  {component:<20}: {status}")
 
     print(f"\nServer configuration:")
@@ -1142,7 +1197,7 @@ if __name__ == "__main__":
 
     print("=" * 70 + "\n")
 
-    # Start server with optimal configuration
+    # Start server with configuration
     uvicorn.run(
         "main:app",
         host="127.0.0.1",

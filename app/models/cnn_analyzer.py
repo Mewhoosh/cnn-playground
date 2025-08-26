@@ -1,53 +1,86 @@
 #!/usr/bin/env python3
 """
-CNN Analyzer with Feature Maps Visualization - FIXED VERSION
+CNN Analyzer with Feature Maps Visualization
+
+This module provides CNN analysis capabilities including:
+- Feature map extraction and visualization
+- Grad-CAM heatmap generation
+- Top-5 predictions with confidence scores
+- Multi-layer activation analysis
 """
 
+from typing import Dict, List, Tuple, Optional, Union, Any
+from pathlib import Path
 import torch
 import torchvision.transforms as transforms
 import torchvision.models as models
 from PIL import Image, ImageOps
 import matplotlib
-
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-from pathlib import Path
 import urllib.request
 import json
 
 
 class CNNFeatureAnalyzer:
-    def __init__(self, output_dir="static/outputs"):
-        """Initialize the CNN analyzer with feature maps extraction"""
+    """
+    CNN Feature Analyzer for deep learning model interpretation.
+
+    Provides analysis of Convolutional Neural Networks
+    including feature map extraction, Grad-CAM visualization, and multi-layer
+    activation analysis using pre-trained ResNet50 architecture.
+
+    Attributes:
+        device (torch.device): Computing device (CPU/CUDA)
+        model (torch.nn.Module): Pre-trained ResNet50 model
+        normalize (transforms.Compose): Image normalization pipeline
+        output_dir (Path): Directory for saving analysis outputs
+        feature_maps (Dict[str, torch.Tensor]): Extracted feature maps storage
+        original_image (Optional[Image.Image]): Original input image
+        layer_info (Dict[str, Dict[str, int]]): Layer architecture information
+        class_labels (Dict[int, str]): ImageNet class label mappings
+    """
+
+    def __init__(self, output_dir: str = "static/outputs") -> None:
+        """
+        Initialize the CNN analyzer with feature maps extraction capabilities.
+
+        Args:
+            output_dir: Directory path for saving analysis outputs and visualizations
+
+        Raises:
+            RuntimeError: If model loading fails
+            OSError: If output directory cannot be created
+        """
         print("[CNN] Loading ResNet50 model with feature extraction...")
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f"[CNN] Using device: {self.device}")
 
         # Load pre-trained ResNet50
-        self.model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+        self.model: torch.nn.Module = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
         self.model.eval()
         self.model.to(self.device)
 
         # Normalize only
-        self.normalize = transforms.Compose([
+        self.normalize: transforms.Compose = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225]),
         ])
 
-        # Output directory - FIXED TO USE CORRECT PATH
-        self.output_dir = Path(output_dir)
+        # Output directory
+        self.output_dir: Path = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         print(f"[CNN] Output directory: {self.output_dir}")
 
         # Feature maps storage
-        self.feature_maps = {}
-        self.original_image = None
+        self.feature_maps: Dict[str, torch.Tensor] = {}
+        self.original_image: Optional[Image.Image] = None
 
         # Layer info
-        self.layer_info = {
+        self.layer_info: Dict[str, Dict[str, int]] = {
             'conv1': {'size': 112, 'channels': 64},
             'conv2_1': {'size': 56, 'channels': 256},
             'conv3_1': {'size': 28, 'channels': 512},
@@ -56,22 +89,33 @@ class CNNFeatureAnalyzer:
         }
 
         # Load ImageNet class labels
-        self.class_labels = self._load_imagenet_labels()
+        self.class_labels: Dict[int, str] = self._load_imagenet_labels()
 
         print("[CNN] CNN Feature Analyzer initialized successfully")
 
-    def _load_imagenet_labels(self):
-        """Load ImageNet class labels"""
+    def _load_imagenet_labels(self) -> Dict[int, str]:
+        """
+        Load ImageNet class labels from external source or create fallback.
+
+        Downloads ImageNet class labels from PyTorch hub if not available locally.
+        Creates numbered fallback labels if download fails.
+
+        Returns:
+            Dictionary mapping class indices to human-readable labels
+
+        Raises:
+            URLError: If download fails (handled gracefully with fallback)
+        """
         try:
-            labels_file = self.output_dir / "imagenet_classes.txt"
+            labels_file: Path = self.output_dir / "imagenet_classes.txt"
 
             if not labels_file.exists():
                 print("[CNN] Downloading ImageNet class labels...")
-                url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
+                url: str = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
                 urllib.request.urlretrieve(url, labels_file)
 
             with open(labels_file, 'r') as f:
-                labels = [line.strip() for line in f.readlines()]
+                labels: List[str] = [line.strip() for line in f.readlines()]
 
             return {i: labels[i] for i in range(len(labels))}
 
@@ -79,29 +123,47 @@ class CNNFeatureAnalyzer:
             print(f"[CNN] Could not download labels: {e}")
             return {i: f"class_{i}" for i in range(1000)}
 
-    def resize_with_padding(self, image, target_size=224):
-        """Resize image preserving aspect ratio and add padding to make it square"""
+    def resize_with_padding(self, image: Image.Image, target_size: int = 224) -> Tuple[Image.Image, Dict[str, Union[int, float]]]:
+        """
+        Resize image preserving aspect ratio with padding.
+
+        Maintains original aspect ratio by scaling to fit within target dimensions
+        and adding black padding to create square output. Preserves image quality
+        while ensuring consistent input size for neural network.
+
+        Args:
+            image: Input PIL Image to be resized
+            target_size: Target square dimensions (default: 224px for ImageNet)
+
+        Returns:
+            Tuple containing:
+                - Resized and padded PIL Image
+                - Dictionary with padding metadata including scale factors
+
+        Raises:
+            ValueError: If target_size is not positive
+        """
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         orig_width, orig_height = image.size
         print(f"[CNN] Original size: {orig_width}x{orig_height}")
 
-        scale = min(target_size / orig_width, target_size / orig_height)
-        new_width = int(orig_width * scale)
-        new_height = int(orig_height * scale)
+        scale: float = min(target_size / orig_width, target_size / orig_height)
+        new_width: int = int(orig_width * scale)
+        new_height: int = int(orig_height * scale)
 
         print(f"[CNN] Scaled size: {new_width}x{new_height}")
 
-        image_resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        image_resized: Image.Image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        pad_width = (target_size - new_width) // 2
-        pad_height = (target_size - new_height) // 2
+        pad_width: int = (target_size - new_width) // 2
+        pad_height: int = (target_size - new_height) // 2
 
-        padded_image = Image.new('RGB', (target_size, target_size), (0, 0, 0))
+        padded_image: Image.Image = Image.new('RGB', (target_size, target_size), (0, 0, 0))
         padded_image.paste(image_resized, (pad_width, pad_height))
 
-        padding_info = {
+        padding_info: Dict[str, Union[int, float]] = {
             'pad_left': pad_width,
             'pad_top': pad_height,
             'pad_right': target_size - new_width - pad_width,
@@ -115,17 +177,27 @@ class CNNFeatureAnalyzer:
 
         return padded_image, padding_info
 
-    def setup_feature_hooks(self):
-        """Setup hooks to capture feature maps from ResNet50"""
+    def setup_feature_hooks(self) -> List[torch.utils.hooks.RemovableHandle]:
+        """
+        Setup forward hooks to capture intermediate feature maps from ResNet50.
 
-        def hook_function(name):
-            def hook(module, input, output):
+        Registers hooks on key convolutional layers to extract feature maps
+        during forward pass. Essential for visualization and analysis of
+        learned representations at different network depths.
+
+        Returns:
+            List of removable hook handles for cleanup after analysis
+
+        Note:
+            Hooks must be removed after use to prevent memory leaks
+        """
+        def hook_function(name: str):
+            def hook(module: torch.nn.Module, input: torch.Tensor, output: torch.Tensor) -> None:
                 self.feature_maps[name] = output.detach().cpu()
-
             return hook
 
         # Register hooks for ResNet50 layers
-        hooks = []
+        hooks: List[torch.utils.hooks.RemovableHandle] = []
         hooks.append(self.model.conv1.register_forward_hook(hook_function('conv1')))
         hooks.append(self.model.layer1.register_forward_hook(hook_function('conv2_1')))
         hooks.append(self.model.layer2.register_forward_hook(hook_function('conv3_1')))
@@ -134,8 +206,24 @@ class CNNFeatureAnalyzer:
 
         return hooks
 
-    def create_overview_image(self, original_image, filename_prefix="overview"):
-        """Create overview with original + one feature map from each layer"""
+    def create_overview_image(self, original_image: Image.Image, filename_prefix: str = "overview") -> Optional[Path]:
+        """
+        Create overview visualization with original image and feature maps.
+
+        Generates a 2x3 grid showing the original input image alongside
+        representative feature maps from each major layer. Provides
+        visual summary of network's feature extraction hierarchy.
+
+        Args:
+            original_image: Original input PIL Image
+            filename_prefix: Prefix for output filename
+
+        Returns:
+            Path to saved overview image, None if creation fails
+
+        Raises:
+            IOError: If image saving fails
+        """
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
         fig.suptitle('CNN Analysis Overview', fontsize=16, fontweight='bold')
 
@@ -183,8 +271,26 @@ class CNNFeatureAnalyzer:
         print(f"[CNN] Saved overview to: {output_path}")
         return output_path
 
-    def visualize_layer_activations(self, layer_name, max_channels=8, filename_prefix="layer"):
-        """Show top 8 activations for specific layer"""
+    def visualize_layer_activations(self, layer_name: str, max_channels: int = 8, filename_prefix: str = "layer") -> Optional[Path]:
+        """
+        Visualize top-k most active filters for specified layer.
+
+        Creates visualization showing the most responsive filters
+        in a given layer. Helps understand what features the network
+        has learned to detect at different abstraction levels.
+
+        Args:
+            layer_name: Name of layer to visualize ('conv1', 'conv2_1', etc.)
+            max_channels: Maximum number of channels to display
+            filename_prefix: Prefix for output filename
+
+        Returns:
+            Path to saved visualization, None if layer not found or save fails
+
+        Raises:
+            KeyError: If layer_name not found in feature_maps
+            IOError: If image saving fails
+        """
         if layer_name not in self.feature_maps:
             print(f"[CNN] No feature maps found for layer: {layer_name}")
             return None
@@ -243,8 +349,28 @@ class CNNFeatureAnalyzer:
         print(f"[CNN] Saved {layer_name} activations to: {output_path}")
         return output_path
 
-    def load_and_preprocess_image(self, image_path):
-        """Load and preprocess image"""
+    def load_and_preprocess_image(self, image_path: Union[str, Path]) -> Tuple[Image.Image, Image.Image, torch.Tensor, Dict[str, Union[int, float]]]:
+        """
+        Load and preprocess image for CNN analysis.
+
+        Handles image preprocessing pipeline including loading,
+        format conversion, aspect-ratio preserving resize, padding,
+        and tensor conversion with normalization.
+
+        Args:
+            image_path: Path to input image file
+
+        Returns:
+            Tuple containing:
+                - Original PIL Image
+                - Preprocessed PIL Image (padded/resized)
+                - Normalized input tensor ready for model
+                - Padding metadata dictionary
+
+        Raises:
+            FileNotFoundError: If image file doesn't exist
+            PIL.UnidentifiedImageError: If file is not a valid image
+        """
         print(f"[CNN] Loading image: {image_path}")
 
         original_image = Image.open(image_path).convert('RGB')
@@ -257,8 +383,26 @@ class CNNFeatureAnalyzer:
 
         return original_image, padded_image, input_batch, padding_info
 
-    def predict(self, input_batch):
-        """Make prediction and return top-5 results"""
+    def predict(self, input_batch: torch.Tensor) -> List[Dict[str, Union[int, str, float]]]:
+        """
+        Generate top-5 predictions with confidence scores.
+
+        Performs inference on preprocessed image tensor and returns
+        the most likely class predictions with associated confidence
+        scores using softmax probabilities.
+
+        Args:
+            input_batch: Preprocessed image tensor with batch dimension
+
+        Returns:
+            List of dictionaries containing:
+                - class_idx: ImageNet class index
+                - class_name: Human-readable class label
+                - confidence: Softmax probability score
+
+        Raises:
+            RuntimeError: If model inference fails
+        """
         print("[CNN] Making prediction...")
 
         with torch.no_grad():
@@ -281,8 +425,28 @@ class CNNFeatureAnalyzer:
 
         return predictions
 
-    def generate_gradcam(self, input_batch, target_class_idx=None):
-        """Generate Grad-CAM heatmap"""
+    def generate_gradcam(self, input_batch: torch.Tensor, target_class_idx: Optional[int] = None) -> np.ndarray:
+        """
+        Generate Gradient-weighted Class Activation Mapping (Grad-CAM) heatmap.
+
+        Creates visual explanation of model predictions by highlighting
+        image regions most important for classification decision.
+        Uses gradients flowing into final convolutional layer.
+
+        Args:
+            input_batch: Preprocessed image tensor
+            target_class_idx: Specific class to generate CAM for (uses top prediction if None)
+
+        Returns:
+            2D numpy array representing normalized heatmap (0-1 range)
+
+        Raises:
+            RuntimeError: If gradient computation fails
+
+        References:
+            Selvaraju et al. "Grad-CAM: Visual Explanations from Deep Networks
+            via Gradient-based Localization" (2017)
+        """
         print("[CNN] Generating Grad-CAM...")
 
         if target_class_idx is None:
@@ -324,8 +488,20 @@ class CNNFeatureAnalyzer:
 
         return cam.detach().numpy()
 
-    def crop_gradcam_to_content(self, gradcam, padding_info):
-        """Remove padding from gradcam"""
+    def crop_gradcam_to_content(self, gradcam: np.ndarray, padding_info: Dict[str, Union[int, float]]) -> np.ndarray:
+        """
+        Remove padding from Grad-CAM to match original image dimensions.
+
+        Crops the Grad-CAM heatmap to remove padding regions and resize
+        to match the content area of the original image before padding.
+
+        Args:
+            gradcam: 2D Grad-CAM heatmap array
+            padding_info: Padding metadata from resize_with_padding
+
+        Returns:
+            Cropped Grad-CAM array matching original image content area
+        """
         gradcam_resized = cv2.resize(gradcam, (224, 224))
 
         pad_left = padding_info['pad_left']
@@ -340,8 +516,27 @@ class CNNFeatureAnalyzer:
 
         return gradcam_content
 
-    def save_gradcam_overlay_only(self, gradcam, original_image, padding_info, filename_prefix):
-        """Save overlay Grad-CAM"""
+    def save_gradcam_overlay_only(self, gradcam: np.ndarray, original_image: Image.Image,
+                                 padding_info: Dict[str, Union[int, float]], filename_prefix: str) -> Path:
+        """
+        Save Grad-CAM overlay visualization as image.
+
+        Creates and saves overlay visualization combining
+        original image with Grad-CAM heatmap. Handles scaling
+        and color mapping for visual interpretation.
+
+        Args:
+            gradcam: Generated Grad-CAM heatmap
+            original_image: Original input PIL Image
+            padding_info: Padding metadata for alignment
+            filename_prefix: Prefix for output filename
+
+        Returns:
+            Path to saved overlay image
+
+        Raises:
+            IOError: If image saving fails
+        """
         print("[CNN] Saving Grad-CAM overlay...")
 
         plt.ioff()
@@ -382,14 +577,36 @@ class CNNFeatureAnalyzer:
         print(f"[CNN] Saved Grad-CAM to: {gradcam_path}")
         return gradcam_path
 
-    def analyze_image_with_features(self, image_path, save_visualizations=True):
-        """Complete analysis with feature maps"""
+    def analyze_image_with_features(self, image_path: Union[str, Path], save_visualizations: bool = True) -> Dict[str, Any]:
+        """
+        Perform CNN analysis with feature map extraction.
+
+        Main analysis pipeline that coordinates all analysis components:
+        feature extraction, prediction, Grad-CAM generation, and visualization
+        creation. Provides analysis results.
+
+        Args:
+            image_path: Path to input image file
+            save_visualizations: Whether to save visualization files to disk
+
+        Returns:
+            Analysis results dictionary containing:
+                - status: Analysis completion status
+                - predictions: Top-5 predictions with confidence
+                - model_info: Model architecture and processing details
+                - gradcam_url: URL to Grad-CAM overlay image
+                - feature_maps: URLs and metadata for feature visualizations
+                - analysis_complete: Boolean completion flag
+
+        Raises:
+            Exception: Any error during analysis (handled gracefully with error response)
+        """
         print(f"[CNN] Starting analysis for: {image_path}")
 
         try:
             timestamp = Path(image_path).stem
 
-            # RESET feature maps and original image
+            # Reset feature maps and original image
             self.feature_maps = {}
             self.original_image = None
 
@@ -422,13 +639,11 @@ class CNNFeatureAnalyzer:
                 gradcam_path = self.save_gradcam_overlay_only(
                     gradcam, original_image, padding_info, timestamp
                 )
-                # FIXED: Correct URL prefix for FastAPI static serving
                 gradcam_url = f"/outputs/gradcam/{gradcam_path.name}"
 
                 # Save overview
                 overview_path = self.create_overview_image(original_image, filename_prefix=timestamp)
                 if overview_path:
-                    # FIXED: Correct URL prefix for FastAPI static serving
                     overview_url = f"/outputs/feature_maps/{overview_path.name}"
 
                 # Save individual layer visualizations
@@ -436,7 +651,6 @@ class CNNFeatureAnalyzer:
                     if layer_name in self.feature_maps:
                         layer_path = self.visualize_layer_activations(layer_name, filename_prefix=timestamp)
                         if layer_path:
-                            # FIXED: Correct URL prefix for FastAPI static serving
                             layer_urls[layer_name] = f"/outputs/feature_maps/{layer_path.name}"
 
             # Create layer details for frontend
@@ -484,24 +698,49 @@ class CNNFeatureAnalyzer:
 
 
 # Global analyzer instance
-_analyzer = None
+_analyzer: Optional[CNNFeatureAnalyzer] = None
 
 
-def get_analyzer(output_dir="static/outputs"):
-    """Get or create global analyzer instance with configurable output directory"""
+def get_analyzer(output_dir: str = "static/outputs") -> CNNFeatureAnalyzer:
+    """
+    Get or create global analyzer instance with configurable output directory.
+
+    Implements singleton pattern for efficient resource management.
+    Reuses existing analyzer instance to avoid repeated model loading.
+
+    Args:
+        output_dir: Directory path for saving analysis outputs
+
+    Returns:
+        Global CNNFeatureAnalyzer instance
+    """
     global _analyzer
     if _analyzer is None:
         _analyzer = CNNFeatureAnalyzer(output_dir=output_dir)
     return _analyzer
 
 
-def analyze_image_endpoint(image_path, output_dir="static/outputs"):
+def analyze_image_endpoint(image_path: Union[str, Path], output_dir: str = "static/outputs") -> Dict[str, Any]:
     """
-    Endpoint function for FastAPI integration
-    FIXED: Now accepts output_dir parameter to specify where files should be saved
+    FastAPI endpoint function for CNN image analysis.
+
+    Primary entry point for web API integration. Creates analyzer
+    instance with specified output directory and performs analysis.
+
+    Args:
+        image_path: Path to input image file
+        output_dir: Directory for saving analysis outputs
+
+    Returns:
+        Analysis results dictionary suitable for JSON API response
+
+    Note:
+        Creates new analyzer instance for each call to ensure
+        output directory configuration for multi-user scenarios.
     """
     print(f"[CNN] analyze_image_endpoint called with output_dir: {output_dir}")
 
     # Create analyzer with specified output directory
-    analyzer = CNNFeatureAnalyzer(output_dir=output_dir)
+    analyzer: CNNFeatureAnalyzer = CNNFeatureAnalyzer(output_dir=output_dir)
     return analyzer.analyze_image_with_features(image_path)
+

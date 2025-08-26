@@ -1,22 +1,34 @@
 #!/usr/bin/env python3
 """
 Computer Vision Analyzer - Object Detection & Instance Segmentation
-Professional implementation with YOLO11, RT-DETR, SAM2 models
+
+Computer vision system providing comprehensive analysis capabilities:
+- Multi-model object detection (YOLO11, YOLO12, RT-DETR)
+- Instance segmentation (YOLO11-seg, SAM2)
+- Real-time video processing with frame optimization
+- Live camera feed analysis with low-latency inference
+- Model management with organized caching
+
+Features:
+- Automatic model discovery and organized storage
+- GPU acceleration with fallback to CPU
+- High-performance video processing pipelines
+- Error handling and logging
+- Comprehensive visualization capabilities
 """
 
+from typing import Dict, List, Tuple, Optional, Union, Any, AsyncGenerator
+from pathlib import Path
 import torch
 import torchvision.transforms as transforms
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import cv2
 import matplotlib
-
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from pathlib import Path
 import time
 import logging
-from typing import Dict, List, Tuple, Optional
 import os
 import asyncio
 import tempfile
@@ -25,20 +37,43 @@ import json
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class ModelManager:
-    """Manages model downloads and caching with organized folder structure"""
+    """
+    Model management system with organized storage and caching.
 
-    def __init__(self, base_path="app/models/saved_models"):
+    Handles automatic model downloads, organized folder structure, and
+    efficient caching for computer vision models. Supports multiple
+    model architectures including YOLO, RT-DETR, and SAM variants.
+
+    Attributes:
+        models_dir (Path): Base directory for model storage
+        detection_dir (Path): Directory for detection models
+        segmentation_dir (Path): Directory for segmentation models
+    """
+
+    def __init__(self, base_path: str = "app/models/saved_models") -> None:
+        """
+        Initialize model manager with organized directory structure.
+
+        Creates hierarchical folder structure for different model types
+        and configures environment variables for model caching.
+
+        Args:
+            base_path: Base directory path for model storage
+
+        Raises:
+            OSError: If directory creation fails
+        """
         # Convert to absolute path to ensure consistency
-        self.models_dir = Path(base_path).resolve()
+        self.models_dir: Path = Path(base_path).resolve()
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
         # Create organized subfolders
-        self.detection_dir = self.models_dir / "detection"
-        self.segmentation_dir = self.models_dir / "segmentation"
+        self.detection_dir: Path = self.models_dir / "detection"
+        self.segmentation_dir: Path = self.models_dir / "segmentation"
         self.detection_dir.mkdir(exist_ok=True)
         self.segmentation_dir.mkdir(exist_ok=True)
 
@@ -56,7 +91,7 @@ class ModelManager:
         os.environ['ULTRALYTICS_CONFIG_DIR'] = str(self.models_dir)
 
         # Set weights directory specifically
-        weights_dir = self.models_dir / "weights"
+        weights_dir: Path = self.models_dir / "weights"
         weights_dir.mkdir(exist_ok=True)
         os.environ['TORCH_HOME'] = str(weights_dir)
 
@@ -69,13 +104,28 @@ class ModelManager:
         logger.info(f"[ModelManager] Environment variables set for model caching")
 
     def get_model_path(self, model_name: str) -> str:
-        """Get local path for model with organized folder structure"""
-        model_file = f"{model_name}.pt"
+        """
+        Get local path for model with organized folder structure.
+
+        Determines appropriate storage location based on model type and
+        architecture. Creates directory structure if needed and handles
+        model download coordination.
+
+        Args:
+            model_name: Name of the model (e.g., 'yolo11m', 'rtdetr-l')
+
+        Returns:
+            Local path to model file for loading/downloading
+
+        Note:
+            Path creation doesn't guarantee model exists - download may be needed
+        """
+        model_file: str = f"{model_name}.pt"
 
         # Determine correct subfolder based on model name
         if 'seg' in model_name:
             if 'yolo11' in model_name:
-                local_path = self.segmentation_dir / "yolo11" / model_file
+                local_path: Path = self.segmentation_dir / "yolo11" / model_file
             elif 'yolo12' in model_name:
                 local_path = self.segmentation_dir / "yolo12" / model_file
             elif 'sam2' in model_name:
@@ -104,7 +154,22 @@ class ModelManager:
             return self._handle_model_download(model_name, local_path)
 
     def _handle_model_download(self, model_name: str, target_path: Path) -> str:
-        """Handle model download to specific location"""
+        """
+        Handle model download preparation to specific location.
+
+        Prepares download location and coordinates with ultralytics
+        download system for model placement.
+
+        Args:
+            model_name: Name of model to download
+            target_path: Target path for model storage
+
+        Returns:
+            Path string for ultralytics to use
+
+        Note:
+            Actual download is handled by ultralytics framework
+        """
         try:
             # First check if ultralytics will download to our location
             logger.info(f"[ModelManager] Preparing download location for {model_name}")
@@ -117,23 +182,31 @@ class ModelManager:
             # Fallback to model name for default ultralytics behavior
             return model_name
 
-    def cleanup_old_models(self):
-        """Clean up models from project root if they exist"""
-        project_root = Path(".")
-        model_patterns = ["*.pt", "yolo*.pt", "rtdetr*.pt", "sam*.pt"]
+    def cleanup_old_models(self) -> None:
+        """
+        Clean up models from project root and organize into directories.
 
-        moved_count = 0
+        Moves any model files found in project root to appropriate
+        subdirectories. Prevents clutter and ensures organized storage.
+
+        Note:
+            Safe operation - only moves files, doesn't delete them
+        """
+        project_root: Path = Path(".")
+        model_patterns: List[str] = ["*.pt", "yolo*.pt", "rtdetr*.pt", "sam*.pt"]
+
+        moved_count: int = 0
         for pattern in model_patterns:
             for model_file in project_root.glob(pattern):
                 if model_file.is_file():
                     try:
                         # Determine target directory
                         if 'seg' in model_file.name:
-                            target_dir = self.segmentation_dir
+                            target_dir: Path = self.segmentation_dir
                         else:
                             target_dir = self.detection_dir
 
-                        target_path = target_dir / model_file.name
+                        target_path: Path = target_dir / model_file.name
 
                         # Move file if it doesn't exist in target
                         if not target_path.exists():
@@ -153,15 +226,42 @@ class ModelManager:
 
 
 class ObjectDetector:
-    """Object Detection using YOLO11, YOLO12, RT-DETR"""
+    """
+    Object detection system using state-of-the-art models.
 
-    def __init__(self, model_name="yolo11m", device=None, output_dir="static/outputs"):
-        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model_name = model_name
-        self.model = None
-        self.model_manager = ModelManager()
-        self.class_names = self._get_coco_classes()
-        self.output_dir = Path(output_dir)
+    Supports multiple detection architectures including YOLO11, YOLO12,
+    and RT-DETR with GPU acceleration and result analysis.
+    Provides bounding box detection with confidence scoring and visualization.
+
+    Attributes:
+        device (torch.device): Computing device (CPU/CUDA)
+        model_name (str): Name of loaded detection model
+        model (Optional[Any]): Loaded detection model instance
+        model_manager (ModelManager): Model management system
+        class_names (List[str]): COCO dataset class labels
+        output_dir (Path): Directory for saving visualizations
+    """
+
+    def __init__(self, model_name: str = "yolo11m", device: Optional[torch.device] = None,
+                 output_dir: str = "static/outputs") -> None:
+        """
+        Initialize object detector with specified model and configuration.
+
+        Args:
+            model_name: Detection model to use ('yolo11m', 'rtdetr-l', etc.)
+            device: Computing device (auto-detected if None)
+            output_dir: Directory for saving detection visualizations
+
+        Raises:
+            ImportError: If ultralytics package not available
+            RuntimeError: If model loading fails
+        """
+        self.device: torch.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model_name: str = model_name
+        self.model: Optional[Any] = None
+        self.model_manager: ModelManager = ModelManager()
+        self.class_names: List[str] = self._get_coco_classes()
+        self.output_dir: Path = Path(output_dir)
 
         logger.info(f"[ObjectDetector] Initializing {model_name} on {self.device}")
 
@@ -177,8 +277,13 @@ class ObjectDetector:
             logger.error(f"[ObjectDetector] Failed to load model: {e}")
             raise e
 
-    def _get_coco_classes(self):
-        """Get COCO dataset class names"""
+    def _get_coco_classes(self) -> List[str]:
+        """
+        Get COCO dataset class names for object labeling.
+
+        Returns:
+            List of 80 COCO class names in standard order
+        """
         return [
             'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
             'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
@@ -193,12 +298,21 @@ class ObjectDetector:
             'toothbrush'
         ]
 
-    def _load_model(self):
-        """Load detection model"""
+    def _load_model(self) -> None:
+        """
+        Load detection model with architecture handling.
+
+        Supports both YOLO and RT-DETR architectures with automatic
+        model type detection and initialization.
+
+        Raises:
+            ImportError: If ultralytics package not installed
+            RuntimeError: If model loading fails
+        """
         try:
             from ultralytics import YOLO, RTDETR
 
-            model_path = self.model_manager.get_model_path(self.model_name)
+            model_path: str = self.model_manager.get_model_path(self.model_name)
 
             logger.info(f"[ObjectDetector] Loading model from: {model_path}")
 
@@ -218,8 +332,13 @@ class ObjectDetector:
             logger.error(f"[ObjectDetector] Error loading model: {e}")
             raise
 
-    def _verify_model_location(self):
-        """Verify model is in correct location and move if necessary"""
+    def _verify_model_location(self) -> None:
+        """
+        Verify model is stored in correct organized location.
+
+        Moves model from project root to organized directory if needed.
+        Ensures clean project structure and model organization.
+        """
         try:
             # After model loading, check if ultralytics downloaded to project root
             project_root = Path(".")
@@ -243,8 +362,29 @@ class ObjectDetector:
         except Exception as e:
             logger.warning(f"[ObjectDetector] Model organization check failed: {e}")
 
-    def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> Dict:
-        """Detect objects in image"""
+    def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> Dict[str, Any]:
+        """
+        Detect objects in image with confidence filtering.
+
+        Performs object detection inference on input image and returns
+        structured results with bounding boxes, confidence scores, and
+        class predictions. Supports confidence-based filtering.
+
+        Args:
+            image_path: Path to input image file
+            confidence_threshold: Minimum confidence for object detection (0.0-1.0)
+
+        Returns:
+            Detection results dictionary containing:
+                - status: Detection completion status
+                - objects: List of detected objects with metadata
+                - processing_time: Inference time in milliseconds
+                - model_info: Model architecture and configuration details
+
+        Raises:
+            FileNotFoundError: If image file doesn't exist
+            RuntimeError: If detection inference fails
+        """
         try:
             if self.model is None:
                 return self._generate_mock_detection_results()
@@ -305,8 +445,26 @@ class ObjectDetector:
                 'processing_time': 0
             }
 
-    def visualize_detections(self, image_path: str, objects: List[Dict], output_path: str) -> Optional[str]:
-        """Visualize detection results"""
+    def visualize_detections(self, image_path: str, objects: List[Dict[str, Any]],
+                           output_path: str) -> Optional[str]:
+        """
+        Create detection visualization with bounding boxes and labels.
+
+        Generates visualization showing detected objects with
+        color-coded bounding boxes, confidence scores, and class labels.
+        Uses color palette and typography.
+
+        Args:
+            image_path: Path to original image
+            objects: List of detection results from detect_objects()
+            output_path: Path for saving visualization
+
+        Returns:
+            Path to saved visualization, None if visualization fails
+
+        Raises:
+            IOError: If image loading or saving fails
+        """
         try:
             # Load image
             image = Image.open(image_path).convert('RGB')
@@ -368,8 +526,16 @@ class ObjectDetector:
             logger.error(f"[ObjectDetector] Visualization error: {e}")
             return None
 
-    def _generate_mock_detection_results(self) -> Dict:
-        """Generate mock detection results for demo"""
+    def _generate_mock_detection_results(self) -> Dict[str, Any]:
+        """
+        Generate mock detection results for demonstration.
+
+        Provides fallback detection results when models are not available.
+        Useful for testing and demonstration of API structure.
+
+        Returns:
+            Mock detection results in standard format
+        """
         logger.warning("[ObjectDetector] Using mock results - models not available")
         return {
             'status': 'success',
@@ -399,14 +565,38 @@ class ObjectDetector:
 
 
 class ImageSegmenter:
-    """Instance Segmentation using YOLO11-seg, SAM2"""
+    """
+    Instance segmentation system with pixel-level accuracy.
 
-    def __init__(self, model_name="yolo11m-seg", device=None):
-        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model_name = model_name
-        self.model = None
-        self.model_manager = ModelManager()
-        self._current_masks = None  # Store masks for visualization
+    Provides instance segmentation using YOLO11-seg and SAM2
+    architectures. Generates pixel-level masks for object instances
+    with visualization and analysis capabilities.
+
+    Attributes:
+        device (torch.device): Computing device (CPU/CUDA)
+        model_name (str): Name of loaded segmentation model
+        model (Optional[Any]): Loaded segmentation model instance
+        model_manager (ModelManager): Model management system
+        _current_masks (Optional[List[np.ndarray]]): Storage for current segmentation masks
+    """
+
+    def __init__(self, model_name: str = "yolo11m-seg", device: Optional[torch.device] = None) -> None:
+        """
+        Initialize instance segmentation system with specified model.
+
+        Args:
+            model_name: Segmentation model to use ('yolo11m-seg', 'sam2_t', etc.)
+            device: Computing device (auto-detected if None)
+
+        Raises:
+            ImportError: If required packages not available
+            RuntimeError: If model loading fails
+        """
+        self.device: torch.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model_name: str = model_name
+        self.model: Optional[Any] = None
+        self.model_manager: ModelManager = ModelManager()
+        self._current_masks: Optional[List[np.ndarray]] = None  # Store masks for visualization
 
         logger.info(f"[ImageSegmenter] Initializing {model_name} on {self.device}")
 
@@ -419,8 +609,17 @@ class ImageSegmenter:
             logger.warning(f"[ImageSegmenter] Model not available: {e}")
             self.model = None
 
-    def _load_model(self):
-        """Load segmentation model"""
+    def _load_model(self) -> None:
+        """
+        Load segmentation model with architecture-specific handling.
+
+        Supports both YOLO segmentation and SAM2 architectures with
+        model initialization and configuration.
+
+        Raises:
+            ImportError: If ultralytics package not installed
+            RuntimeError: If model loading fails
+        """
         try:
             model_path = self.model_manager.get_model_path(self.model_name)
 
@@ -443,8 +642,13 @@ class ImageSegmenter:
             logger.error(f"[ImageSegmenter] Error loading model {self.model_name}: {e}")
             raise
 
-    def _verify_model_location(self):
-        """Verify model is in correct location and move if necessary"""
+    def _verify_model_location(self) -> None:
+        """
+        Verify segmentation model is stored in correct organized location.
+
+        Ensures models are organized in segmentation subdirectory
+        and moves from project root if necessary.
+        """
         try:
             # After model loading, check if ultralytics downloaded to project root
             project_root = Path(".")
@@ -468,8 +672,28 @@ class ImageSegmenter:
         except Exception as e:
             logger.warning(f"[ImageSegmenter] Model organization check failed: {e}")
 
-    def segment_image(self, image_path: str) -> Dict:
-        """Perform instance segmentation on image"""
+    def segment_image(self, image_path: str) -> Dict[str, Any]:
+        """
+        Perform instance segmentation on input image.
+
+        Generates pixel-level instance masks for detected objects with
+        metadata including coverage statistics, confidence
+        scores, and class predictions.
+
+        Args:
+            image_path: Path to input image file
+
+        Returns:
+            Segmentation results dictionary containing:
+                - status: Segmentation completion status
+                - segments: List of segmented instances with metadata
+                - processing_time: Inference time in milliseconds
+                - model_info: Model architecture and configuration details
+
+        Raises:
+            FileNotFoundError: If image file doesn't exist
+            RuntimeError: If segmentation inference fails
+        """
         try:
             if self.model is None:
                 return self._generate_mock_segmentation_results()
@@ -546,8 +770,26 @@ class ImageSegmenter:
                 'processing_time': 0
             }
 
-    def visualize_segmentation(self, image_path: str, segments: List[Dict], output_path: str) -> Optional[str]:
-        """Visualize segmentation results with actual masks"""
+    def visualize_segmentation(self, image_path: str, segments: List[Dict[str, Any]],
+                             output_path: str) -> Optional[str]:
+        """
+        Create segmentation visualization with colored masks.
+
+        Generates visualization overlaying colored instance masks
+        on original image with contours, labels, and transparency effects.
+        Uses actual segmentation masks when available.
+
+        Args:
+            image_path: Path to original image
+            segments: List of segmentation results from segment_image()
+            output_path: Path for saving visualization
+
+        Returns:
+            Path to saved visualization, None if visualization fails
+
+        Raises:
+            IOError: If image processing or saving fails
+        """
         try:
             # Load original image
             original_image = Image.open(image_path).convert('RGB')
@@ -669,7 +911,15 @@ class ImageSegmenter:
             return None
 
     def _get_class_name(self, class_id: int) -> str:
-        """Get class name from ID"""
+        """
+        Get human-readable class name from COCO class ID.
+
+        Args:
+            class_id: COCO dataset class index
+
+        Returns:
+            Human-readable class name or fallback identifier
+        """
         coco_classes = [
             'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
             'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
@@ -686,15 +936,31 @@ class ImageSegmenter:
         return coco_classes[class_id] if class_id < len(coco_classes) else f"class_{class_id}"
 
     def _generate_color(self, index: int) -> str:
-        """Generate hex color for segment"""
+        """
+        Generate consistent hex color for segmentation visualization.
+
+        Args:
+            index: Segment index for color selection
+
+        Returns:
+            Hex color string for visualization
+        """
         colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
             '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
         ]
         return colors[index % len(colors)]
 
-    def _generate_mock_segmentation_results(self) -> Dict:
-        """Generate mock segmentation results for demo"""
+    def _generate_mock_segmentation_results(self) -> Dict[str, Any]:
+        """
+        Generate mock segmentation results for demonstration.
+
+        Provides fallback segmentation results when models are not available.
+        Maintains API compatibility for testing and demonstration.
+
+        Returns:
+            Mock segmentation results in standard format
+        """
         logger.warning("[ImageSegmenter] Using mock results - models not available")
         return {
             'status': 'success',
@@ -725,11 +991,30 @@ class ImageSegmenter:
             'demo_mode': True
         }
 
-class VisionAnalyzer:
-    """Main analyzer combining object detection and instance segmentation"""
 
-    def __init__(self, output_dir="static/outputs"):
-        self.output_dir = Path(output_dir)
+class VisionAnalyzer:
+    """
+    Computer vision analysis system combining multiple tasks.
+
+    Analyzer that orchestrates object detection and
+    instance segmentation for image understanding. Provides
+    unified interface for multi-task computer vision analysis.
+
+    Attributes:
+        output_dir (Path): Base directory for saving all analysis outputs
+    """
+
+    def __init__(self, output_dir: str = "static/outputs") -> None:
+        """
+        Initialize vision analysis system.
+
+        Args:
+            output_dir: Base directory for saving analysis results
+
+        Raises:
+            OSError: If output directory creation fails
+        """
+        self.output_dir: Path = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create subdirectories
@@ -741,8 +1026,33 @@ class VisionAnalyzer:
 
     def analyze_complete(self, image_path: str, detection_model: str = "yolo11m",
                          segmentation_model: str = "yolo11m-seg",
-                         confidence_threshold: float = 0.5) -> Dict:
-        """Perform complete computer vision analysis"""
+                         confidence_threshold: float = 0.5) -> Dict[str, Any]:
+        """
+        Perform computer vision analysis on input image.
+
+        Orchestrates analysis pipeline including object detection,
+        instance segmentation, and visualization generation.
+        Provides unified results with metadata.
+
+        Args:
+            image_path: Path to input image file
+            detection_model: Object detection model to use
+            segmentation_model: Instance segmentation model to use
+            confidence_threshold: Minimum confidence for object detection
+
+        Returns:
+            Analysis results dictionary containing:
+                - status: Overall analysis completion status
+                - image_info: Input image metadata and properties
+                - detection: Complete object detection results and visualizations
+                - segmentation: Complete instance segmentation results and visualizations
+                - model_info: Model architecture and configuration metadata
+                - analysis_complete: Boolean completion flag
+
+        Raises:
+            FileNotFoundError: If input image file doesn't exist
+            RuntimeError: If any analysis component fails critically
+        """
         logger.info(f"[VisionAnalyzer] Starting analysis for: {image_path}")
 
         try:
@@ -830,9 +1140,35 @@ class VisionAnalyzer:
 # Video Processing Functions
 async def process_video_complete(video_path: str, detection_model: str = "yolo11n",
                                  frame_skip: int = 2, confidence_threshold: float = 0.4,
-                                 output_dir: str = "static/outputs/video") -> Dict:
-    """Process video file with object detection frame by frame"""
+                                 output_dir: str = "static/outputs/video") -> Dict[str, Any]:
+    """
+    Process video file with frame-by-frame object detection and output generation.
 
+    Video processing pipeline that applies object detection
+    to video frames and generates annotated output video with performance
+    statistics and metadata tracking.
+
+    Args:
+        video_path: Path to input video file
+        detection_model: Object detection model for frame analysis
+        frame_skip: Process every Nth frame for performance optimization
+        confidence_threshold: Minimum confidence for object detection
+        output_dir: Directory for saving processed video
+
+    Returns:
+        Video processing results dictionary containing:
+            - status: Processing completion status
+            - processed_video_url: URL to annotated output video
+            - stats: Performance statistics and object counts
+            - model_info: Model configuration and processing metadata
+
+    Raises:
+        FileNotFoundError: If input video file doesn't exist
+        RuntimeError: If video processing fails
+
+    Note:
+        Async function for non-blocking video processing
+    """
     logger.info(f"[VideoProcessor] Starting video processing: {video_path}")
 
     try:
@@ -959,9 +1295,34 @@ async def process_video_complete(video_path: str, detection_model: str = "yolo11
 
 
 async def process_live_frame(frame_path: str, detection_model: str = "yolo11n",
-                             confidence_threshold: float = 0.3) -> Dict:
-    """Process single frame from live camera feed - FIXED VERSION"""
+                             confidence_threshold: float = 0.3) -> Dict[str, Any]:
+    """
+    Process single frame from live camera feed with low-latency inference.
 
+    Optimized for real-time processing of camera frames with minimal
+    latency. Designed for live streaming applications and interactive
+    computer vision systems.
+
+    Args:
+        frame_path: Path to captured frame image
+        detection_model: Detection model for real-time inference
+        confidence_threshold: Minimum confidence for real-time detection
+
+    Returns:
+        Live frame processing results containing:
+            - status: Processing completion status
+            - objects: Detected objects with minimal metadata
+            - processing_time: Inference latency in milliseconds
+            - model: Model identifier for client tracking
+            - frame_info: Frame metadata and processing context
+
+    Raises:
+        FileNotFoundError: If frame file doesn't exist
+        RuntimeError: If frame processing fails
+
+    Note:
+        Optimized for speed over analysis
+    """
     try:
         # Initialize detector with proper model
         detector = ObjectDetector(detection_model)
@@ -1002,8 +1363,13 @@ async def process_live_frame(frame_path: str, detection_model: str = "yolo11n",
         }
 
 
-def _generate_mock_video_results() -> Dict:
-    """Generate mock video processing results"""
+def _generate_mock_video_results() -> Dict[str, Any]:
+    """
+    Generate mock video processing results for demonstration.
+
+    Returns:
+        Mock video processing results in standard format
+    """
     return {
         'status': 'success',
         'processed_video_url': None,
@@ -1021,26 +1387,23 @@ def _generate_mock_video_results() -> Dict:
     }
 
 
-def _generate_mock_live_results() -> Dict:
-    """Generate mock live detection results - REMOVED FROM MAIN FLOW"""
-    logger.warning("[LiveProcessor] Using mock results - models not available")
-
-    return {
-        'status': 'success',
-        'objects': [],  # Empty for demo
-        'processing_time': 50,
-        'model': 'demo_mode',
-        'demo_mode': True,
-        'message': 'Demo mode - install ultralytics for real detection'
-    }
+# Global analyzer instance for efficient resource management
+_vision_analyzer: Optional[VisionAnalyzer] = None
 
 
-# Global analyzer instance
-_vision_analyzer = None
+def get_sota_vision_analyzer(output_dir: str = "static/outputs") -> VisionAnalyzer:
+    """
+    Get or create global vision analyzer instance using singleton pattern.
 
+    Implements efficient resource management by reusing analyzer instance
+    across multiple requests. Reduces model loading overhead and memory usage.
 
-def get_sota_vision_analyzer(output_dir="static/outputs"):
-    """Get or create global vision analyzer instance"""
+    Args:
+        output_dir: Directory for saving analysis outputs
+
+    Returns:
+        Global VisionAnalyzer instance ready for analysis
+    """
     global _vision_analyzer
     if _vision_analyzer is None:
         _vision_analyzer = VisionAnalyzer(output_dir=output_dir)
@@ -1050,9 +1413,28 @@ def get_sota_vision_analyzer(output_dir="static/outputs"):
 def analyze_vision_complete(image_path: str, detection_model: str = "yolo11m",
                             segmentation_model: str = "yolo11m-seg",
                             confidence_threshold: float = 0.5,
-                            output_dir: str = "static/outputs") -> Dict:
-    """Computer Vision Analysis Endpoint"""
-    analyzer = VisionAnalyzer(output_dir=output_dir)
+                            output_dir: str = "static/outputs") -> Dict[str, Any]:
+    """
+    FastAPI endpoint function for computer vision analysis.
+
+    Primary API entry point for computer vision analysis requests.
+    Creates analyzer instance with specified configuration and
+    performs complete multi-task analysis.
+
+    Args:
+        image_path: Path to input image file
+        detection_model: Object detection model selection
+        segmentation_model: Instance segmentation model selection
+        confidence_threshold: Detection confidence threshold
+        output_dir: Directory for saving analysis outputs
+
+    Returns:
+        Complete analysis results dictionary suitable for JSON API response
+
+    Note:
+        Creates new analyzer instance for output directory isolation
+    """
+    analyzer: VisionAnalyzer = VisionAnalyzer(output_dir=output_dir)
     return analyzer.analyze_complete(
         image_path=image_path,
         detection_model=detection_model,
@@ -1062,9 +1444,10 @@ def analyze_vision_complete(image_path: str, detection_model: str = "yolo11m",
 
 
 if __name__ == "__main__":
+    # Testing and validation
     print("Testing Computer Vision Analyzer...")
     try:
-        analyzer = VisionAnalyzer()
+        analyzer: VisionAnalyzer = VisionAnalyzer()
         print("Vision Analyzer initialized successfully")
         print("Available detection models: YOLO11 (n,s,m,l,x), RT-DETR (l,x)")
         print("Available segmentation models: YOLO11-seg, SAM2.1 (t,s,b,l)")
@@ -1072,4 +1455,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}")
         print("Running in demo mode - models will generate mock results")
-
