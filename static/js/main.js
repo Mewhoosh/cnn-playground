@@ -1,7 +1,7 @@
 // CNN Playground - Global JavaScript Module
 
 /**
- * GLOBAL IMAGE MODAL FUNCTION
+ * GLOBAL IMAGE MODAL FUNCTION - WORKING VERSION
  * This function must be available globally for onclick handlers
  */
 function openImageModal(src) {
@@ -45,7 +45,7 @@ function openImageModal(src) {
 
     // Create close button
     const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '&times;';
+    closeBtn.innerHTML = '×';
     closeBtn.style.cssText = `
         position: absolute;
         top: 20px;
@@ -69,7 +69,7 @@ function openImageModal(src) {
 
     // Create info text
     const infoText = document.createElement('div');
-    infoText.innerHTML = 'Click anywhere to close &bull; ESC';
+    infoText.innerHTML = 'Click anywhere to close • ESC';
     infoText.style.cssText = `
         position: absolute;
         bottom: 30px;
@@ -178,11 +178,11 @@ function toggleTheme() {
 
     if (body.getAttribute('data-theme') === 'dark') {
         body.removeAttribute('data-theme');
-        themeToggle.textContent = 'Light';
+        themeToggle.textContent = '🌙';
         localStorage.setItem('theme', 'light');
     } else {
         body.setAttribute('data-theme', 'dark');
-        themeToggle.textContent = 'Dark';
+        themeToggle.textContent = '☀️';
         localStorage.setItem('theme', 'dark');
     }
 }
@@ -193,9 +193,7 @@ function loadTheme() {
 
     if (savedTheme === 'dark') {
         document.body.setAttribute('data-theme', 'dark');
-        if (themeToggle) themeToggle.textContent = 'Dark';
-    } else {
-        if (themeToggle) themeToggle.textContent = 'Light';
+        if (themeToggle) themeToggle.textContent = '☀️';
     }
 }
 
@@ -282,7 +280,7 @@ async function makeRequest(url, options = {}) {
  */
 function validateImageFile(file, maxSizeMB = 10) {
     if (!file.type.startsWith('image/')) {
-        throw new Error('Please select a valid image file (JPG, PNG, GIF)');
+        throw new Error('Please select a valid image file (JPG, PNG)');
     }
 
     if (file.size > maxSizeMB * 1024 * 1024) {
@@ -312,7 +310,7 @@ function setLoadingState(element, loading = true) {
             element.dataset.originalText = element.textContent;
         }
 
-        element.innerHTML = '<span class="loading-spinner"></span> Processing...';
+        element.innerHTML = '<span class="loading-spinner"></span> Loading...';
     } else {
         element.disabled = false;
         element.classList.remove('loading');
@@ -324,7 +322,7 @@ function setLoadingState(element, loading = true) {
 }
 
 /**
- * Number Formatting Utilities
+ * Number Formatting
  */
 function formatNumber(num, decimals = 2) {
     if (typeof num !== 'number') return 'N/A';
@@ -347,7 +345,7 @@ function formatFileSize(bytes) {
 }
 
 /**
- * Performance Optimization Utilities
+ * Performance Optimization
  */
 function debounce(func, wait) {
     let timeout;
@@ -375,7 +373,7 @@ function throttle(func, limit) {
 }
 
 /**
- * Navigation Helper Functions
+ * Navigation Helpers
  */
 function navigateTo(url) {
     window.location.href = url;
@@ -393,7 +391,7 @@ function setActiveNavTab(currentPage) {
 }
 
 /**
- * Image Processing Utilities
+ * Image Processing
  */
 function resizeImage(file, maxWidth = 800, maxHeight = 800, quality = 0.8) {
     return new Promise((resolve) => {
@@ -428,7 +426,7 @@ function resizeImage(file, maxWidth = 800, maxHeight = 800, quality = 0.8) {
 }
 
 /**
- * Professional Modal System
+ * Modal System
  */
 function createModal(title, content, actions = []) {
     const modal = document.createElement('div');
@@ -450,22 +448,21 @@ function createModal(title, content, actions = []) {
     const modalContent = document.createElement('div');
     modalContent.style.cssText = `
         background: var(--bg-primary);
-        border-radius: 12px;
-        padding: 24px;
+        border-radius: 15px;
+        padding: 30px;
         max-width: 500px;
         width: 90%;
         max-height: 80vh;
         overflow-y: auto;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        border: 1px solid var(--border-color);
     `;
 
     modalContent.innerHTML = `
-        <h2 style="margin-bottom: 16px; color: var(--text-primary); font-size: 1.5rem; font-weight: 600;">${title}</h2>
-        <div style="margin-bottom: 24px; color: var(--text-secondary); line-height: 1.5;">${content}</div>
-        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <h2 style="margin-bottom: 20px; color: var(--text-primary);">${title}</h2>
+        <div style="margin-bottom: 20px; color: var(--text-secondary);">${content}</div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
             ${actions.map(action => `
-                <button class="btn ${action.class || 'btn-secondary'}" onclick="${action.onclick}">${action.text}</button>
+                <button class="btn ${action.class || ''}" onclick="${action.onclick}">${action.text}</button>
             `).join('')}
         </div>
     `;
@@ -495,31 +492,31 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTheme();
     initializeAnimations();
 
-    // Initialize fade-in animations with delay
+    // Delayed animation trigger
     setTimeout(() => {
         document.querySelectorAll('.fade-in').forEach(el => {
             el.classList.add('visible');
         });
     }, 300);
 
-    console.log('[CNNPlayground] Application core initialized successfully');
+    console.log('[CNNPlayground] Application initialized');
 });
 
 /**
- * Public API Exports
+ * Global API Exports
  */
 window.CNNPlayground = {
     // Theme management
     toggleTheme,
     loadTheme,
 
-    // Status messaging
+    // Messaging system
     showMessage,
     showError,
     showSuccess,
     showWarning,
 
-    // Network utilities
+    // Network communication
     makeRequest,
 
     // File handling
@@ -533,11 +530,11 @@ window.CNNPlayground = {
     formatPercentage,
     formatFileSize,
 
-    // Performance utilities
+    // Performance optimization
     debounce,
     throttle,
 
-    // Navigation utilities
+    // Navigation
     navigateTo,
     setActiveNavTab,
 
@@ -547,9 +544,9 @@ window.CNNPlayground = {
 };
 
 /**
- * Global function exports for HTML integration
+ * CRITICAL: Make image modal function available globally
+ * This ensures onclick="openImageModal(src)" works from any HTML
  */
 window.openImageModal = openImageModal;
 
-console.log('[CNNPlayground] Core module loaded and ready');
-
+console.log('[CNNPlayground] Core module loaded with working image modal');
