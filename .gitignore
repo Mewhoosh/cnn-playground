@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # C extensions
 *.so
@@ -28,8 +31,6 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -85,13 +86,9 @@ ipython_config.py
 .python-version
 
 # pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
 #Pipfile.lock
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# PEP 582
 __pypackages__/
 
 # Celery stuff
@@ -136,6 +133,10 @@ dmypy.json
 *.swo
 *~
 
+# PyCharm specific
+.idea/*
+!.idea/runConfigurations/
+
 # Operating System Files
 .DS_Store
 .DS_Store?
@@ -144,6 +145,9 @@ dmypy.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Windows
+desktop.ini
 
 # SSL Certificates and Security
 certificates/
@@ -156,7 +160,6 @@ ssl/
 *.pfx
 
 # Application specific
-# Uploaded files
 static/uploads/
 static/outputs/
 
@@ -172,6 +175,10 @@ tmp/
 *.pkl
 *.joblib
 app/models/saved_models/
+
+# Exception: keep mnist model
+!app/models/saved_models/mnist_model.pth
+
 
 # Logs
 logs/
@@ -192,3 +199,14 @@ secrets.json
 *.bak
 *.backup
 *.old
+
+# Node.js (for JavaScript dependencies)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# CV/ML specific
+*.weights
+*.caffemodel
+*.pb

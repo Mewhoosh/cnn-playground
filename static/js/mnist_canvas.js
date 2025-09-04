@@ -1,6 +1,6 @@
 /**
- * MNIST Canvas Drawing Interface - COMPLETELY FIXED VERSION
- * Working erase functionality without white dots
+ * MNIST Canvas Drawing Interface
+ * Professional drawing canvas for digit recognition with CNN visualization
  */
 
 class MNISTCanvas {
@@ -11,13 +11,13 @@ class MNISTCanvas {
         this.lastX = 0;
         this.lastY = 0;
         this.brushSize = 20;
-        this.eraseSize = 35; // Zwiększony rozmiar gumki
+        this.eraseSize = 35;
 
         // Store all strokes for redrawing
         this.allStrokes = [];
         this.currentStroke = [];
 
-        // Erase mode
+        // Drawing mode state
         this.isEraseMode = false;
 
         // Prediction settings
@@ -42,33 +42,35 @@ class MNISTCanvas {
         this.initializeConfidenceBars();
         this.setupImageModalDelegation();
 
-        console.log('MNIST Canvas initialized');
+        console.log('MNIST Canvas initialized successfully');
     }
+
     setupImageModalDelegation() {
-    document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target.tagName === 'IMG' &&
-            (target.classList.contains('gradcam-image') ||
-             target.classList.contains('layer-image') ||
-             target.hasAttribute('data-modal-src'))) {
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.tagName === 'IMG' &&
+                (target.classList.contains('gradcam-image') ||
+                 target.classList.contains('layer-image') ||
+                 target.hasAttribute('data-modal-src'))) {
 
-            e.preventDefault();
-            e.stopPropagation();
+                e.preventDefault();
+                e.stopPropagation();
 
-            const src = target.getAttribute('data-modal-src') || target.src;
-            if (window.openImageModal) {
-                window.openImageModal(src);
+                const src = target.getAttribute('data-modal-src') || target.src;
+                if (window.openImageModal) {
+                    window.openImageModal(src);
+                }
             }
-        }
-    });
-}
+        });
+    }
+
     setupCanvas() {
         // Set canvas properties
         this.canvas.style.position = 'relative';
         this.canvas.style.display = 'block';
         this.canvas.style.touchAction = 'none';
 
-        // Configure context - zawsze zaczynamy w trybie normalnego rysowania
+        // Configure context - start in normal drawing mode
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
         this.ctx.imageSmoothingEnabled = false;
@@ -77,29 +79,29 @@ class MNISTCanvas {
         this.ctx.lineWidth = this.brushSize;
         this.canvas.style.cursor = 'crosshair';
 
-        // White background
+        // Set white background
         this.clearCanvas();
     }
 
     updateCanvasMode() {
-        // Aktualizuje tryb canvas w zależności od isEraseMode
+        // Update canvas mode based on current drawing state
         if (this.isEraseMode) {
             this.ctx.globalCompositeOperation = 'destination-out';
             this.ctx.lineWidth = this.eraseSize;
             this.updateCursor();
-            console.log('Canvas mode set to ERASE (destination-out)');
+            console.log('Canvas mode: ERASE (destination-out)');
         } else {
             this.ctx.globalCompositeOperation = 'source-over';
             this.ctx.strokeStyle = '#000000';
             this.ctx.lineWidth = this.brushSize;
             this.updateCursor();
-            console.log('Canvas mode set to DRAW (source-over)');
+            console.log('Canvas mode: DRAW (source-over)');
         }
     }
 
     updateCursor() {
         if (this.isEraseMode) {
-            const cursorSize = Math.min(this.eraseSize, 50); // Ogranicz max rozmiar kursora
+            const cursorSize = Math.min(this.eraseSize, 50);
             const cursorUrl = this.createEraseCursor(cursorSize);
             this.canvas.style.cursor = `url(${cursorUrl}) ${cursorSize/2} ${cursorSize/2}, auto`;
         } else {
@@ -108,21 +110,21 @@ class MNISTCanvas {
     }
 
     createEraseCursor(size) {
-        // Utwórz niestandardowy kursor gumki
+        // Create custom eraser cursor
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
         canvas.width = size;
         canvas.height = size;
 
-        // Narysuj koło z obramowaniem
+        // Draw circle with border
         const center = size / 2;
         const radius = Math.max(2, center - 2);
 
-        // Przezroczyste tło
+        // Transparent background
         ctx.clearRect(0, 0, size, size);
 
-        // Białe koło z czarnym obramowaniem
+        // White circle with black border
         ctx.beginPath();
         ctx.arc(center, center, radius, 0, 2 * Math.PI);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -131,7 +133,7 @@ class MNISTCanvas {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Dodaj krzyżyk w środku
+        // Add crosshair in center
         ctx.beginPath();
         ctx.moveTo(center - 3, center);
         ctx.lineTo(center + 3, center);
@@ -147,15 +149,13 @@ class MNISTCanvas {
     toggleEraseMode() {
         this.isEraseMode = !this.isEraseMode;
 
-        console.log('Toggling erase mode to:', this.isEraseMode);
+        console.log('Toggle erase mode:', this.isEraseMode);
 
-        // Natychmiast aktualizuj tryb canvas
+        // Update canvas mode immediately
         this.updateCanvasMode();
 
-        // Update button appearance
+        // Update UI elements
         this.updateEraseButton();
-
-        // Aktualizuj slider label
         this.updateSliderLabel();
     }
 
@@ -164,33 +164,29 @@ class MNISTCanvas {
         if (brushSizeSlider) {
             const label = brushSizeSlider.previousElementSibling;
             if (label && label.tagName === 'LABEL') {
-                if (this.isEraseMode) {
-                    label.textContent = 'Erase Size:';
-                } else {
-                    label.textContent = 'Brush Size:';
-                }
+                label.textContent = this.isEraseMode ? 'Erase Size:' : 'Brush Size:';
             }
         }
     }
 
     updateEraseButton() {
         const eraseBtn = document.getElementById('eraseBtn');
-        console.log('Updating erase button, found element:', !!eraseBtn);
+        console.log('Updating erase button, element found:', !!eraseBtn);
 
         if (eraseBtn) {
             if (this.isEraseMode) {
                 eraseBtn.classList.add('active');
-                eraseBtn.innerHTML = '✏️ Draw';
+                eraseBtn.innerHTML = 'Draw Mode';
                 eraseBtn.title = 'Switch to draw mode';
-                console.log('Button set to Draw mode');
+                console.log('Button: Draw mode active');
             } else {
                 eraseBtn.classList.remove('active');
-                eraseBtn.innerHTML = '🧽 Erase';
+                eraseBtn.innerHTML = 'Erase Mode';
                 eraseBtn.title = 'Switch to erase mode';
-                console.log('Button set to Erase mode');
+                console.log('Button: Erase mode active');
             }
         } else {
-            console.error('Erase button not found!');
+            console.error('Erase button element not found');
         }
     }
 
@@ -200,21 +196,20 @@ class MNISTCanvas {
     }
 
     redrawAllStrokes() {
-        // Clear canvas
+        // Clear and redraw all stored strokes
         this.clearCanvas();
 
-        // Redraw all strokes
         this.allStrokes.forEach(stroke => {
             if (stroke.length === 0) return;
 
             const firstPoint = stroke[0];
 
             if (firstPoint.isErase) {
-                // For erase strokes, use destination-out
+                // Apply erase strokes with destination-out
                 this.ctx.save();
                 this.ctx.globalCompositeOperation = 'destination-out';
                 this.ctx.lineWidth = firstPoint.size;
-                this.ctx.strokeStyle = '#000000'; // Color doesn't matter for destination-out
+                this.ctx.strokeStyle = '#000000';
 
                 this.ctx.beginPath();
                 this.ctx.moveTo(firstPoint.x, firstPoint.y);
@@ -225,7 +220,7 @@ class MNISTCanvas {
                 this.ctx.restore();
 
             } else {
-                // For draw strokes, use normal drawing
+                // Apply draw strokes normally
                 this.ctx.save();
                 this.ctx.globalCompositeOperation = 'source-over';
                 this.ctx.strokeStyle = '#000000';
@@ -246,12 +241,12 @@ class MNISTCanvas {
     }
 
     setupEventListeners() {
-        // Prevent default behaviors
+        // Prevent default browser behaviors
         this.canvas.addEventListener('selectstart', (e) => e.preventDefault());
         this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // Mouse events
+        // Mouse event handlers
         this.canvas.addEventListener('mousedown', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -275,7 +270,7 @@ class MNISTCanvas {
             this.stopDrawing();
         });
 
-        // Touch events
+        // Touch event handlers for mobile support
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -310,15 +305,15 @@ class MNISTCanvas {
             this.canvas.dispatchEvent(new MouseEvent('mouseup', {}));
         }, { passive: false });
 
-        // Button events with debugging
+        // Button event handlers
         const predictBtn = document.getElementById('predictBtn');
         const clearBtn = document.getElementById('clearBtn');
         const eraseBtn = document.getElementById('eraseBtn');
 
-        console.log('Setting up button listeners:');
-        console.log('- predictBtn found:', !!predictBtn);
-        console.log('- clearBtn found:', !!clearBtn);
-        console.log('- eraseBtn found:', !!eraseBtn);
+        console.log('Button listeners setup:');
+        console.log('- Predict button found:', !!predictBtn);
+        console.log('- Clear button found:', !!clearBtn);
+        console.log('- Erase button found:', !!eraseBtn);
 
         if (predictBtn) {
             predictBtn.addEventListener('click', () => {
@@ -340,7 +335,7 @@ class MNISTCanvas {
                 this.toggleEraseMode();
             });
         } else {
-            console.error('Erase button not found during setup!');
+            console.error('Erase button not found during initialization');
         }
     }
 
@@ -357,26 +352,23 @@ class MNISTCanvas {
                 const newSize = parseInt(e.target.value);
 
                 if (this.isEraseMode) {
-                    // W trybie erase, kontroluj rozmiar gumki
-                    this.eraseSize = Math.max(newSize + 10, 25); // Gumka większa niż pędzel
+                    this.eraseSize = Math.max(newSize + 10, 25);
                     this.ctx.lineWidth = this.eraseSize;
-                    this.updateCursor(); // Aktualizuj kursor gumki
+                    this.updateCursor();
                 } else {
-                    // W trybie draw, kontroluj rozmiar pędzla
                     this.brushSize = newSize;
                     this.ctx.lineWidth = this.brushSize;
                 }
 
-                // Preview ZAWSZE pokazuje tylko wartość slidera w tym samym kolorze
+                // Update preview size
                 const previewSize = Math.max(10, newSize);
                 brushPreview.style.width = previewSize + 'px';
                 brushPreview.style.height = previewSize + 'px';
-                // Kolor ZAWSZE ten sam
                 brushPreview.style.backgroundColor = '#333';
                 brushPreview.style.border = '2px solid #666';
             });
 
-            // Ustaw początkowy preview - tylko raz na start
+            // Initialize preview
             const previewSize = Math.max(10, this.brushSize);
             brushPreview.style.width = previewSize + 'px';
             brushPreview.style.height = previewSize + 'px';
@@ -391,15 +383,12 @@ class MNISTCanvas {
         const brushPreview = document.getElementById('brushPreview');
         if (!brushPreview) return;
 
-        // Preview zawsze pokazuje rozmiar z slidera, nie rzeczywisty rozmiar gumki
         const brushSizeSlider = document.getElementById('brushSize');
         const sliderValue = brushSizeSlider ? parseInt(brushSizeSlider.value) : this.brushSize;
         const previewSize = Math.max(10, sliderValue);
 
         brushPreview.style.width = previewSize + 'px';
         brushPreview.style.height = previewSize + 'px';
-
-        // Zawsze ten sam kolor, niezależnie od trybu
         brushPreview.style.backgroundColor = '#333';
         brushPreview.style.border = '2px solid #666';
     }
@@ -421,7 +410,7 @@ class MNISTCanvas {
         this.lastX = pos.x;
         this.lastY = pos.y;
 
-        // Ustaw prawidłowy tryb rysowania PRZED rozpoczęciem ruchu
+        // Ensure correct canvas mode
         this.updateCanvasMode();
 
         this.currentStroke = [{
@@ -431,7 +420,7 @@ class MNISTCanvas {
             isErase: this.isEraseMode
         }];
 
-        // Hide overlay
+        // Hide canvas overlay
         const overlay = document.getElementById('canvasOverlay');
         if (overlay) {
             overlay.classList.remove('show');
@@ -439,7 +428,7 @@ class MNISTCanvas {
 
         this.cancelPrediction();
 
-        console.log('Started drawing in mode:', this.isEraseMode ? 'erase' : 'draw');
+        console.log('Drawing started, mode:', this.isEraseMode ? 'erase' : 'draw');
     }
 
     draw(e) {
@@ -447,10 +436,10 @@ class MNISTCanvas {
 
         const pos = this.getMousePos(e);
 
-        // Upewnij się, że context jest w prawidłowym trybie
+        // Ensure correct canvas mode
         this.updateCanvasMode();
 
-        // Rysuj w bieżącym trybie (normalny lub erase)
+        // Draw stroke in current mode
         this.ctx.beginPath();
         this.ctx.moveTo(this.lastX, this.lastY);
         this.ctx.lineTo(pos.x, pos.y);
@@ -473,11 +462,10 @@ class MNISTCanvas {
         this.isDrawing = false;
 
         if (this.currentStroke.length > 0) {
-            // Add current stroke to all strokes
+            // Store completed stroke
             this.allStrokes.push([...this.currentStroke]);
 
-            // WAŻNE: Jeśli to był ruch wymazywania, od razu przerysuj wszystko
-            // aby canvas pokazywał prawidłowy obraz
+            // Redraw if erase operations were performed
             if (this.currentStroke[0].isErase) {
                 this.redrawAllStrokes();
             }
@@ -485,18 +473,18 @@ class MNISTCanvas {
             this.currentStroke = [];
         }
 
-        // Zawsze resetuj do normalnego trybu po zakończeniu ruchu
+        // Reset to standard drawing mode
         this.ctx.globalCompositeOperation = 'source-over';
         this.ctx.strokeStyle = '#000000';
 
-        // Ustaw prawidłową szerokość linii dla bieżącego trybu
+        // Restore current mode settings
         this.updateCanvasMode();
 
         if (this.autoPredictEnabled) {
             this.scheduleAutoPrediction();
         }
 
-        console.log('Stopped drawing, total strokes:', this.allStrokes.length);
+        console.log('Drawing stopped, total strokes:', this.allStrokes.length);
     }
 
     scheduleAutoPrediction() {
@@ -517,7 +505,7 @@ class MNISTCanvas {
     async predict(forcePrediction = false) {
         try {
             if (this.isRequesting && !forcePrediction) {
-                console.log('Skipping prediction - request in progress');
+                console.log('Prediction request already in progress');
                 return;
             }
 
@@ -540,7 +528,7 @@ class MNISTCanvas {
 
             this.showPredictionLoading();
 
-            console.log('Sending MNIST prediction request...');
+            console.log('Sending MNIST prediction request');
 
             const response = await fetch('/api/predict_mnist', {
                 method: 'POST',
@@ -732,7 +720,7 @@ class MNISTCanvas {
     }
 
     clear() {
-        // Reset everything
+        // Reset all state
         this.allStrokes = [];
         this.currentStroke = [];
         this.lastImageHash = null;
@@ -743,7 +731,7 @@ class MNISTCanvas {
         this.updateEraseButton();
         this.updateSliderLabel();
 
-        // Upewnij się, że canvas jest w prawidłowym trybie
+        // Update canvas mode
         this.updateCanvasMode();
 
         // Clear canvas
@@ -751,7 +739,7 @@ class MNISTCanvas {
 
         this.cancelPrediction();
 
-        // Show overlay
+        // Show canvas overlay
         const overlay = document.getElementById('canvasOverlay');
         if (overlay) {
             overlay.classList.add('show');
@@ -761,7 +749,7 @@ class MNISTCanvas {
         this.resetPredictions();
         this.hideProcessedImage();
 
-        console.log('Canvas cleared and reset to draw mode');
+        console.log('Canvas cleared, reset to draw mode');
     }
 
     resetPredictions() {
@@ -801,7 +789,7 @@ class MNISTCanvas {
         return hash;
     }
 
-    // Public API
+    // Public API methods
     enableAutoPrediction() {
         this.autoPredictEnabled = true;
     }
@@ -812,39 +800,39 @@ class MNISTCanvas {
     }
 
     getCanvasData() {
-        // Przed pobraniem danych, upewnij się że wszystkie operacje są zastosowane
+        // Ensure canvas is up to date
         this.ensureCanvasUpdated();
 
-        // Utwórz tymczasowy canvas z białym tłem dla export
+        // Return canvas data with white background
         return this.getCanvasDataWithWhiteBackground();
     }
 
     getCanvasDataWithWhiteBackground() {
-        // Utwórz tymczasowy canvas
+        // Create temporary canvas with white background
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = this.canvas.width;
         tempCanvas.height = this.canvas.height;
         const tempCtx = tempCanvas.getContext('2d');
 
-        // Narysuj białe tło
+        // Fill with white background
         tempCtx.fillStyle = '#ffffff';
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        // Skopiuj zawartość oryginalnego canvas
+        // Copy current canvas content
         tempCtx.drawImage(this.canvas, 0, 0);
 
-        // Zwróć dane z białym tłem
+        // Return as data URL
         return tempCanvas.toDataURL('image/png');
     }
 
     ensureCanvasUpdated() {
-        // Jeśli są jakieś operacje wymazywania, przerysuj wszystko
+        // Check if canvas needs updating due to erase operations
         const hasEraseStrokes = this.allStrokes.some(stroke =>
             stroke.length > 0 && stroke[0].isErase
         );
 
         if (hasEraseStrokes) {
-            console.log('Ensuring canvas is updated with erase operations');
+            console.log('Updating canvas with erase operations');
             this.redrawAllStrokes();
         }
     }
@@ -856,7 +844,7 @@ class MNISTCanvas {
     isCurrentlyPredicting() {
         return this.isRequesting;
     }
-
 }
 
+// Export to global scope
 window.MNISTCanvas = MNISTCanvas;

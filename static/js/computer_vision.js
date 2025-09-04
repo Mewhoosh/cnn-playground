@@ -3,8 +3,6 @@
  * Professional multi-mode analyzer with performance optimizations
  *
  * @class ComputerVisionAnalyzer
- * @version 2.1.0 - Performance Optimized
- * @author CNN Playground
  */
 
 class ComputerVisionAnalyzer {
